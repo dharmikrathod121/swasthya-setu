@@ -1,69 +1,256 @@
-import Image from "next/image";
+import Link from "next/link";
+import { PublicHeader } from "@/components/public-header";
+import { PublicFooter } from "@/components/public-footer";
+import { PromptWall } from "@/components/prompt-wall";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <>
+      <a href="#main" className="skip-link">
+        Skip to main content
+      </a>
+
+      <PublicHeader />
+
+      <main id="main">
+        {/* ============ HERO ============ */}
+        <section className="landing-hero">
+          <div className="hero-inner">
+            <span className="hero-eyebrow">
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "16px" }}
+              >
+                verified
+              </span>{" "}
+              Trusted health companion for Rajkot
+            </span>
+            <h1>
+              One app for every health need in{" "}
+              <span className="hl">Rajkot</span>
+            </h1>
+            <p className="hero-sub">
+              Find hospitals, book verified doctors, and unlock AI health
+              tools — voice-first, multilingual, and built for everyone.
+            </p>
+
+            <form
+              className="hero-search"
+              action="/search"
+              method="get"
+              role="search"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <label className="sr-only" htmlFor="hero-q">
+                Search hospitals, doctors, medicines
+              </label>
+              <div className="hs-field">
+                <span className="material-symbols-outlined">
+                  search
+                </span>
+                <input
+                  id="hero-q"
+                  type="text"
+                  name="q"
+                  placeholder="Search hospitals, doctors, medicines..."
+                />
+              </div>
+              <button type="submit" className="btn btn-primary">
+                Search
+              </button>
+            </form>
+
+            <div className="hero-chips">
+              <Link href="/hospitals" className="hero-chip">
+                🏥 Hospitals
+              </Link>
+              <Link href="/doctors" className="hero-chip">
+                👨‍⚕️ Doctors
+              </Link>
+              <Link href="/medicine-identifier" className="hero-chip">
+                💊 Medicines
+              </Link>
+            </div>
+
+            <div className="hero-cta">
+              <Link href="/dashboard" className="btn btn-primary">
+                Sign up free
+              </Link>
+              <Link href="/chatbot" className="btn-ghost-light">
+                Try as guest
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ============ TRUST BAR ============ */}
+        <div className="trust-bar reveal">
+          <div className="trust-pill">
+            <div className="tp-num">240+</div>
+            <div className="tp-label">Hospitals listed</div>
+          </div>
+          <div className="trust-pill">
+            <div className="tp-num">1,800+</div>
+            <div className="tp-label">Verified doctors</div>
+          </div>
+          <div className="trust-pill">
+            <div className="tp-num">52,000+</div>
+            <div className="tp-label">AI reports analyzed</div>
+          </div>
+        </div>
+
+        {/* ============ FEATURES ============ */}
+        <section className="landing-section">
+          <div className="section-head reveal">
+            <h2>Everything for your health, in one place</h2>
+            <p>
+              From finding the nearest ICU to understanding a
+              prescription — Swasthya Setu brings it together.
+            </p>
+          </div>
+
+          <div className="features-grid">
+            <Link
+              href="/hospitals"
+              className="feature-card reveal"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+              <div
+                className="feature-card-icon"
+                style={{
+                  background: "var(--color-primary-soft)",
+                  color: "var(--color-primary)",
+                }}
+              >
+                <span className="material-symbols-outlined">
+                  local_hospital
+                </span>
+              </div>
+              <h3>Find Hospitals</h3>
+              <p>
+                Government &amp; private hospitals in Rajkot with
+                filters, live availability, and patient reviews.
+              </p>
+            </Link>
+
+            <Link
+              href="/appointment"
+              className="feature-card reveal"
+            >
+              <div
+                className="feature-card-icon"
+                style={{
+                  background: "var(--color-accent-soft)",
+                  color: "var(--color-accent)",
+                }}
+              >
+                <span className="material-symbols-outlined">
+                  event_available
+                </span>
+              </div>
+              <h3>Book Doctors</h3>
+              <p>
+                Book appointments with verified specialists in a few
+                taps, by specialty and language.
+              </p>
+            </Link>
+
+            <Link
+              href="/ai-services"
+              className="feature-card reveal"
+            >
+              <div
+                className="feature-card-icon"
+                style={{
+                  background: "var(--color-ai-soft)",
+                  color: "var(--color-ai)",
+                }}
+              >
+                <span className="material-symbols-outlined">
+                  description
+                </span>
+              </div>
+              <h3>AI Report</h3>
+              <p>
+                Upload a medical report and get plain-language
+                insights and next steps in seconds.
+              </p>
+            </Link>
+
+            <Link
+              href="/medicine-identifier"
+              className="feature-card reveal"
+            >
+              <div
+                className="feature-card-icon"
+                style={{
+                  background: "var(--color-ai-soft)",
+                  color: "var(--color-ai)",
+                }}
+              >
+                <span className="material-symbols-outlined">
+                  pill
+                </span>
+              </div>
+              <h3>Medicine ID</h3>
+              <p>
+                Identify any medicine by image or name to check
+                usage, dosage, and side effects.
+              </p>
+            </Link>
+
+            <Link
+              href="/chatbot"
+              className="feature-card reveal"
+            >
+              <div
+                className="feature-card-icon"
+                style={{
+                  background: "var(--color-ai-soft)",
+                  color: "var(--color-ai)",
+                }}
+              >
+                <span className="material-symbols-outlined">
+                  robot_2
+                </span>
+              </div>
+              <h3>Health Chatbot</h3>
+              <p>
+                Ask the AI assistant about symptoms, medicines, and
+                healthy habits — any time of day.
+              </p>
+            </Link>
+
+            <Link href="/chat" className="feature-card reveal">
+              <div
+                className="feature-card-icon"
+                style={{
+                  background: "var(--color-success-soft)",
+                  color: "var(--color-success)",
+                }}
+              >
+                <span className="material-symbols-outlined">
+                  forum
+                </span>
+              </div>
+              <h3>Free Doctor Chat</h3>
+              <p>
+                Chat with verified doctors for free guidance and
+                second opinions, no appointment needed.
+              </p>
+            </Link>
+          </div>
+        </section>
+
+        {/* ============ PROMPT WALL ============ */}
+        <PromptWall />
       </main>
-    </div>
+
+      {/* ============ FOOTER ============ */}
+      <PublicFooter />
+
+      {/* ============ STICKY VOICE TRIAGE ============ */}
+      <Link href="/emergency" className="voice-triage-pill">
+        <span className="vt-emoji">🎙</span> Voice Triage — tap to speak
+      </Link>
+    </>
   );
 }
