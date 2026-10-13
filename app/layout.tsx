@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono, Geist } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/components/shared/auth-provider";
 import { RevealProvider } from "@/components/reveal-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -63,7 +64,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <RevealProvider />
-          {children}
+          <AuthProvider>{children}</AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>

@@ -1,9 +1,21 @@
-import { AppLayout } from "@/components/app-layout";
+"use client";
 
-function ApptCard({ id, initials, name, meta, badgeClass, badge, date, time, reason, status, rx }: {
-  id: string; initials: string; name: string; meta: string; badgeClass: string; badge: string;
-  date: string; time: string; reason: string; status: "upcoming" | "completed" | "cancelled"; rx?: boolean;
+import { useState } from "react";
+import { AppLayout } from "@/components/app-layout";
+import { useAuth } from "@/components/shared/auth-provider";
+import { useAppointments } from "@/lib/hooks/use-api";
+import Link from "next/link";
+
+type Status = "upcoming" | "completed" | "cancelled";
+
+function ApptCard({ id, name, meta, date, time, reason, status, rx }: {
+  id: string; name: string; meta: string;
+  date: string; time: string; reason: string; status: Status; rx?: boolean;
 }) {
+  const badgeClass = status === "upcoming" ? "badge-primary" : status === "completed" ? "badge-success" : "badge-error";
+  const badge = status.charAt(0).toUpperCase() + status.slice(1);
+  const initials = name.split(" ").slice(1).map((n) => n[0]).join("").slice(0, 2).toUpperCase() || name.slice(0, 2);
+
   return (
     <article className={`appt-card is-${status}`} data-id={id}>
       <div className="appt-avatar" aria-hidden="true">{initials}</div>
@@ -28,187 +40,88 @@ function ApptCard({ id, initials, name, meta, badgeClass, badge, date, time, rea
 }
 
 export default function AppointmentsPage() {
+  const { user, loading: authLoading, isLoggedIn } = useAuth();
+  const [filter, setFilter] = useState<Status | "all">("all");
+  const { data: appointments, isLoading, error } = useAppointments(user?.id);
+
+  if (authLoading) return <AppLayout><div className="container" style={{ padding: "var(--space-8)" }}>Loading...</div></AppLayout>;
+
+  if (!isLoggedIn) {
+    return (
+      <AppLayout>
+        <div className="container section" style={{ paddingTop: "var(--space-8)" }}>
+          <div className="login-wall" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "var(--space-10)" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 64, color: "var(--color-primary)" }}>lock</span>
+            <h1>Sign in to view appointments</h1>
+            <p>Your appointments, prescriptions and bookings are private. Please sign in to continue.</p>
+            <Link href="/login" className="btn btn-primary btn-lg" style={{ marginTop: "var(--space-4)" }}>
+              <span className="material-symbols-outlined">login</span> Sign in to continue
+            </Link>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  interface AppointmentRow {
+    id: string;
+    patient_name?: string;
+    hospital_id?: string | null;
+    date: string;
+    time: string;
+    reason?: string;
+    status: Status;
+  }
+
+  const list = (appointments ?? []) as AppointmentRow[];
+  const filtered = filter === "all" ? list : list.filter((a) => a.status === filter);
+
+  const upcoming = list.filter((a) => a.status === "upcoming").length || 0;
+  const completed = list.filter((a) => a.status === "completed").length || 0;
+  const cancelled = list.filter((a) => a.status === "cancelled").length || 0;
+
   return (
     <AppLayout>
       <div className="container" style={{ maxWidth: 1180, padding: 0 }}>
-        <section id="login-wall" className="login-wall" hidden>
-          <div className="login-wall-icon">
-            <span className="material-symbols-outlined">lock</span>
+        <section className="page-header reveal">
+          <div className="page-header-text">
+            <div className="section-eyebrow">Your health, scheduled</div>
+            <h1>Appointments</h1>
+            <p>Manage your upcoming visits, track your history, and book new consultations.</p>
           </div>
-          <h1>Sign in to view appointments</h1>
-          <p>Your appointments, prescriptions and bookings are private. Please sign in to continue.</p>
-          <button type="button" className="btn btn-primary btn-lg" id="login-wall-btn">
-            <span className="material-symbols-outlined">login</span> Sign in to continue
-          </button>
+          <Link href="/appointment" className="btn btn-primary">
+            <span className="material-symbols-outlined">add</span> Book new
+          </Link>
         </section>
 
-        <div id="app-content">
-          <section className="page-header reveal">
-            <div className="page-header-text">
-              <div className="section-eyebrow">Your health, scheduled</div>
-              <h1>Appointments</h1>
-              <p>Manage your upcoming visits, track your history, and book new consultations.</p>
-            </div>
-            <button type="button" className="btn btn-primary" id="book-new-btn">
-              <span className="material-symbols-outlined">add</span> Book new
-            </button>
-          </section>
+        <section className="stats-bar appt-stats" aria-label="Appointment statistics">
+          <div className="stat-item"><div className="stat-value">{appointments?.length || 0}</div><div className="stat-label">Total booked</div></div>
+          <div className="stat-item"><div className="stat-value" style={{ color: "var(--color-primary)" }}>{upcoming}</div><div className="stat-label">Upcoming</div></div>
+          <div className="stat-item"><div className="stat-value" style={{ color: "var(--color-success)" }}>{completed}</div><div className="stat-label">Completed</div></div>
+          <div className="stat-item"><div className="stat-value" style={{ color: "var(--color-error)" }}>{cancelled}</div><div className="stat-label">Cancelled</div></div>
+        </section>
 
-          <section className="stats-bar appt-stats" aria-label="Appointment statistics">
-            <div className="stat-item">
-              <div className="stat-value" id="stat-total">7</div>
-              <div className="stat-label">Total booked</div>
+        <section className="appointments-grid">
+          <div className="appointments-col">
+            <div className="appt-toolbar">
+              <h2 className="appt-col-title">Your appointments</h2>
+              <span className="appt-count">{filtered?.length || 0} visits</span>
             </div>
-            <div className="stat-item">
-              <div className="stat-value" id="stat-upcoming" style={{ color: "var(--color-primary)" }}>4</div>
-              <div className="stat-label">Upcoming</div>
+            <div className="filter-bar appt-filters" role="group" aria-label="Filter appointments">
+              {["all", "upcoming", "completed", "cancelled"].map((f) => (
+                <button key={f} className={`filter-pill ${filter === f ? "active" : ""}`} onClick={() => setFilter(f as Status | "all")}>{f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}</button>
+              ))}
             </div>
-            <div className="stat-item">
-              <div className="stat-value" id="stat-completed" style={{ color: "var(--color-success)" }}>2</div>
-              <div className="stat-label">Completed</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value" id="stat-cancelled" style={{ color: "var(--color-error)" }}>1</div>
-              <div className="stat-label">Cancelled</div>
-            </div>
-          </section>
-
-          <section className="appointments-grid">
-            <div className="appointments-col">
-              <div className="appt-toolbar">
-                <h2 className="appt-col-title">Your appointments</h2>
-                <span className="appt-count" id="appt-count">3 visits</span>
-              </div>
-
-              <div className="filter-bar appt-filters" role="group" aria-label="Filter appointments">
-                <button className="filter-pill active" data-filter="all">All</button>
-                <button className="filter-pill" data-filter="upcoming">Upcoming</button>
-                <button className="filter-pill" data-filter="completed">Completed</button>
-                <button className="filter-pill" data-filter="cancelled">Cancelled</button>
-              </div>
-
-              <div id="appointment-list" className="appointment-list" aria-live="polite">
-                <ApptCard id="a4" initials="RM" name="Dr. Rohan Mehta" meta="Apollo Hospitals · Pediatrician" badgeClass="badge-primary" badge="Upcoming" date="15 Aug 2026" time="10:00 AM" reason="Child vaccination" status="upcoming" />
-                <ApptCard id="a1" initials="KR" name="Dr. Kavya Reddy" meta="Manipal Hospitals · General Physician" badgeClass="badge-success" badge="Completed" date="3 Aug 2026" time="4:00 PM" reason="Fever & fatigue" status="completed" rx />
-                <ApptCard id="a3" initials="AS" name="Dr. Ananya Sharma" meta="AIIMS Delhi · Cardiologist" badgeClass="badge-error" badge="Cancelled" date="10 Aug 2026" time="9:30 AM" reason="Routine heart checkup" status="cancelled" />
-              </div>
-            </div>
-
-            <div className="appointments-col">
-              <div className="calendar-card card">
-                <div className="card-header cal-header">
-                  <h2 className="cal-title">Activity calendar</h2>
-                  <span className="badge badge-primary" id="cal-month">August 2026</span>
-                </div>
-                <div className="card-body">
-                  <div className="cal-weekdays" aria-hidden="true">
-                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-                  </div>
-                  <div className="cal-grid" id="cal-grid" role="list" aria-label="Appointment activity by day">
-                    <span className="cal-cell empty"></span>
-                    <span className="cal-cell empty"></span>
-                    <span className="cal-cell empty"></span>
-                    <span className="cal-cell empty"></span>
-                    <span className="cal-cell empty"></span>
-                    <span className="cal-cell empty"></span>
-                    <span className="cal-cell cal-l0">1</span>
-                    <span className="cal-cell cal-l0">2</span>
-                    <span className="cal-cell cal-l1 has-count">3</span>
-                    <span className="cal-cell cal-l0">4</span>
-                    <span className="cal-cell cal-l1 has-count">5</span>
-                    <span className="cal-cell cal-l0">6</span>
-                    <span className="cal-cell cal-l0">7</span>
-                    <span className="cal-cell cal-l0">8</span>
-                    <span className="cal-cell cal-l0">9</span>
-                    <span className="cal-cell cal-l1 has-count">10</span>
-                    <span className="cal-cell cal-l0">11</span>
-                    <span className="cal-cell cal-l0">12</span>
-                    <span className="cal-cell cal-l0">13</span>
-                    <span className="cal-cell cal-l0">14</span>
-                    <span className="cal-cell cal-l3 has-count">15</span>
-                  </div>
-                  <div className="cal-legend">
-                    <span className="cal-legend-label">Less</span>
-                    <span className="cal-cell cal-l0"></span>
-                    <span className="cal-cell cal-l1"></span>
-                    <span className="cal-cell cal-l2"></span>
-                    <span className="cal-cell cal-l3"></span>
-                    <span className="cal-legend-label">More</span>
-                  </div>
-                  <p className="cal-hint" id="cal-hint">3 days with appointments this month.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <div className="book-modal" id="book-modal" role="dialog" aria-modal="true" aria-labelledby="book-title" hidden>
-          <div className="book-backdrop" data-book-close></div>
-          <div className="book-card">
-            <div className="book-header">
-              <h2 id="book-title" className="book-title">Book an appointment</h2>
-              <button className="book-close" data-book-close aria-label="Close booking">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <ol className="book-steps" id="book-steps" aria-hidden="true">
-              <li className="book-step active" data-step="1"><span className="book-step-num">1</span> Doctor</li>
-              <li className="book-step" data-step="2"><span className="book-step-num">2</span> Date &amp; time</li>
-              <li className="book-step" data-step="3"><span className="book-step-num">3</span> Reason</li>
-              <li className="book-step" data-step="4"><span className="book-step-num">4</span> Confirm</li>
-            </ol>
-            <div className="book-body">
-              <div className="book-panel" data-panel="1">
-                <label className="input-label" htmlFor="doc-search">Search for a doctor</label>
-                <div className="input-search book-field">
-                  <span className="input-search-icon material-symbols-outlined">search</span>
-                  <input type="text" id="doc-search" className="input-field" placeholder="Name or specialty e.g. Cardio..." autoComplete="off" />
-                </div>
-                <div className="doc-results" id="doc-results" role="listbox" aria-label="Doctor results"></div>
-              </div>
-              <div className="book-panel" data-panel="2" hidden>
-                <div className="input-group book-field">
-                  <label className="input-label" htmlFor="book-date">Select date</label>
-                  <input type="date" id="book-date" className="input-field" min="" />
-                </div>
-                <label className="input-label">Select a time slot</label>
-                <div className="slot-grid" id="slot-grid" role="group" aria-label="Time slots"></div>
-              </div>
-              <div className="book-panel" data-panel="3" hidden>
-                <div className="input-group book-field">
-                  <label className="input-label" htmlFor="book-reason">Reason for visit</label>
-                  <input type="text" id="book-reason" className="input-field" placeholder="e.g. Routine checkup" autoComplete="off" />
-                </div>
-                <div className="input-group">
-                  <label className="input-label" htmlFor="book-notes">Notes (optional)</label>
-                  <textarea id="book-notes" className="input-field" rows={4} placeholder="Anything the doctor should know..."></textarea>
-                </div>
-              </div>
-              <div className="book-panel" data-panel="4" hidden>
-                <div className="book-summary" id="book-summary"></div>
-              </div>
-            </div>
-            <div className="book-footer">
-              <button className="btn btn-ghost" id="book-back" type="button">Back</button>
-              <button className="btn btn-primary" id="book-next" type="button">Next</button>
+            <div className="appointment-list" aria-live="polite">
+              {isLoading && <p>Loading appointments...</p>}
+              {error && <p className="text-error">Error: {error}</p>}
+              {filtered?.length === 0 && <p>No appointments found.</p>}
+              {filtered?.map((a) => (
+                <ApptCard key={a.id} id={a.id} name={a.patient_name || "Patient"} meta={a.hospital_id ? "Hospital" : "Clinic"} date={a.date} time={a.time} reason={a.reason || "Consultation"} status={a.status} />
+              ))}
             </div>
           </div>
-        </div>
-
-        <div className="rx-modal" id="rx-modal" role="dialog" aria-modal="true" aria-labelledby="rx-title" hidden>
-          <div className="book-backdrop" data-rx-close></div>
-          <div className="rx-card">
-            <div className="book-header">
-              <h2 id="rx-title" className="book-title">Prescription</h2>
-              <button className="book-close" data-rx-close aria-label="Close prescription">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="rx-body" id="rx-body"></div>
-          </div>
-        </div>
-
-        <div className="toast" id="toast" role="status" aria-live="polite" hidden></div>
+        </section>
       </div>
     </AppLayout>
   );

@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
-import { doctors } from "@/lib/data/mock-data";
+import { doctors as fallbackDoctors } from "@/lib/data/mock-data";
+import { useDoctors } from "@/lib/hooks/use-api";
 
 const COLOR_BY_SPECIALTY: Record<string, string> = {
   Cardiologist: "primary",
@@ -31,6 +32,21 @@ function initialsOf(name: string) {
 }
 
 export default function DoctorsPage() {
+  const { data: apiDoctors } = useDoctors();
+  const doctors = (Array.isArray(apiDoctors) && apiDoctors.length > 0
+    ? apiDoctors.map((d: Record<string, unknown>, i: number) => ({
+        id: String(d.id ?? `db-${i}`),
+        name: String(d.name ?? "Doctor"),
+        specialty: String(d.specialty ?? "General Physician"),
+        hospital: String((d as { hospitals?: { name?: unknown }; hospital_name?: unknown }).hospitals?.name ?? (d as { hospital_name?: unknown }).hospital_name ?? "Rajkot"),
+        rating: Number(d.rating ?? 4.3),
+        experience: String(d.experience ?? "10+ years"),
+        languages: (Array.isArray(d.languages) ? d.languages : ["English", "Hindi", "Gujarati"]) as string[],
+        fee: Number(d.fee ?? 300),
+        nextAvailable: String(d.next_available ?? "Mon-Sat"),
+        reviews: [] as { author: string; rating: number; text: string }[],
+      }))
+    : fallbackDoctors) as typeof fallbackDoctors;
   const specialties = [...new Set(doctors.map((d) => d.specialty))].sort();
   const hospitalOptions = [...new Set(doctors.map((d) => d.hospital))].sort();
   const languageOptions = [...new Set(doctors.flatMap((d) => d.languages))].sort();

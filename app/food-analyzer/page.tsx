@@ -100,7 +100,7 @@ export default function Page() {
 
               <div className="az-caution">
                 <span className="material-symbols-outlined">info</span>
-                <span>This is a demo based on keyword matching — not a substitute for the official label or a dietitian's advice.</span>
+                <span>This is a demo based on keyword matching — not a substitute for the official label or a dietitian&apos;s advice.</span>
               </div>
 
               <div className="card-footer" style={{ margin: "var(--space-6) calc(-1 * var(--space-6)) calc(-1 * var(--space-6))", borderTop: "1px solid var(--border-subtle)", display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
