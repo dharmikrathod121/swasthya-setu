@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Markdown } from "@/components/shared/markdown";
+import { useAuth } from "@/components/shared/auth-provider";
 
 const MAX_FREE_MESSAGES = 3;
 
@@ -26,7 +27,9 @@ export function ChatbotPreview() {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const idRef = React.useRef(1);
 
-  const gated = used >= MAX_FREE_MESSAGES;
+  const { isLoggedIn, loading: authLoading } = useAuth();
+  // Signed-in users chat unlimited; guests get 3 free teaser messages.
+  const gated = !authLoading && !isLoggedIn && used >= MAX_FREE_MESSAGES;
 
   React.useEffect(() => {
     const el = containerRef.current;
@@ -115,7 +118,7 @@ export function ChatbotPreview() {
 
       {gated ? (
         <div className="pw-gate" aria-live="polite">
-          <p>You&apos;ve used your {MAX_FREE_MESSAGES} free messages. Sign up free to keep chatting.</p>
+          <p>You&apos;ve used your {MAX_FREE_MESSAGES} free messages. Sign in for unlimited chat.</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Link href="/dashboard" className="btn btn-primary btn-sm">
               Sign up free

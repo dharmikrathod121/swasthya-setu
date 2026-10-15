@@ -127,10 +127,10 @@ export function AiServicesGrid() {
           <span className="ais-card-icon ai" aria-hidden="true">
             <span className="material-symbols-outlined">smart_toy</span>
           </span>
-          <span className="badge badge-ai">3 messages free</span>
+          <span className="badge badge-ai">Free · Unlimited after sign-in</span>
         </div>
         <h3>Health Chatbot</h3>
-        <p>Ask general health questions and get instant, AI-generated guidance. Free for 3 messages — then sign in to continue.</p>
+        <p>Ask general health questions and get instant, AI-generated guidance. Free to try — unlimited once you sign in.</p>
         <Link href="/chatbot" className="btn btn-ai btn-sm ais-open-btn" aria-label="Open Health Chatbot">
           Open <span className="material-symbols-outlined ais-btn-icon" aria-hidden="true">arrow_forward</span>
         </Link>

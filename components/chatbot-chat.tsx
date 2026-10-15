@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Markdown } from "@/components/shared/markdown";
+import { useAuth } from "@/components/shared/auth-provider";
 
 type Role = "user" | "assistant";
 interface UIMessage {
@@ -93,7 +94,11 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
     reader.readAsDataURL(file);
   }
 
-  const gated = used >= maxFree;
+  const { isLoggedIn, loading: authLoading } = useAuth();
+  // Signed-in users chat unlimited; guests get maxFree messages then a gate.
+  // While auth is resolving, apply the guest limit so nothing flashes.
+  const limit = authLoading || !isLoggedIn ? maxFree : Infinity;
+  const gated = used >= limit;
   const sentInitialRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -165,7 +170,7 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
     void send(input);
   }
 
-  const remaining = Math.max(0, maxFree - used);
+  const remaining = Number.isFinite(limit) ? Math.max(0, limit - used) : null;
 
   return (
     <div className="chat-container">
@@ -181,12 +186,19 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
             </div>
           </div>
         </div>
-        {Number.isFinite(maxFree) && (
+        {remaining != null ? (
           <span className="ais-free-pill">
             <span className="material-symbols-outlined ais-badge-icon" aria-hidden="true">
               chat
             </span>
             <span>{remaining}</span> free messages
+          </span>
+        ) : (
+          <span className="ais-free-pill">
+            <span className="material-symbols-outlined ais-badge-icon" aria-hidden="true">
+              all_inclusive
+            </span>
+            <span>Unlimited</span>
           </span>
         )}
       </div>
@@ -249,12 +261,12 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
             </span>
             <div>
               <h3>You&apos;ve used your {maxFree} free messages</h3>
-              <p>Sign in to keep chatting with the AI assistant. No real account is created — this is a demo.</p>
+              <p>Sign in for unlimited AI chat — free.</p>
             </div>
           </div>
           <div className="ais-gate-actions">
-            <Link className="btn btn-primary" href="/dashboard">
-              Sign in to continue
+            <Link className="btn btn-primary" href="/login?redirect=%2Fchatbot">
+              Sign in for unlimited chat
             </Link>
             <Link className="btn btn-ghost" href="/ai-services">
               Back to AI Tools

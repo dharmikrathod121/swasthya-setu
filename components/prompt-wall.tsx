@@ -7,7 +7,7 @@ export function PromptWall() {
     <section className="landing-section prompt-wall">
       <div className="section-head reveal">
         <h2>Try the AI - no sign up needed</h2>
-        <p>Ask anything live. You get 3 free messages, then we will ask you to sign up.</p>
+        <p>Ask anything live. Try free — sign in for unlimited chat.</p>
       </div>
       <div className="pw-card reveal">
         <div className="pw-head">
