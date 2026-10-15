@@ -17,9 +17,11 @@ export function createMiddlewareClient({
   request: NextRequest;
   response: NextResponse;
 }): SupabaseClient {
+  // Same placeholder fallback as the browser client so builds without env
+  // vars don't crash; without real keys every request looks logged-out.
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key",
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
