@@ -25,5 +25,23 @@ export default async function DoctorDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <DoctorProfileClient doctor={doctor} />;
+  return (
+    <DoctorProfileClient
+      doctor={{
+        id: doctor.id,
+        name: doctor.name,
+        specialty: doctor.specialty,
+        hospital_id: doctor.hospital,
+        rating: doctor.rating,
+        experience: doctor.experience,
+        languages: doctor.languages,
+        fee: doctor.fee,
+        bio: doctor.bio,
+        education: doctor.education,
+        specializations: doctor.specializations,
+        reviews: doctor.reviews,
+        clinic_timings: doctor.clinicTimings,
+      }}
+    />
+  );
 }

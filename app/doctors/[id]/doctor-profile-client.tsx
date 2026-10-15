@@ -70,23 +70,29 @@ export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }
                     <div className="doc-spec">{d.specialty}</div>
                     <div className="profile-hero-tags">
                       <span className="badge badge-primary"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>local_hospital</span> {d.hospital_id || "Hospital"}</span>
-                      <span className="badge badge-warning"><span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>star</span> {d.rating?.toFixed(1)} ({d.reviews?.length || 0})</span>
-                      <span className="badge badge-success">{d.experience} experience</span>
+                      {(d.rating ?? 0) > 0 && (
+                        <span className="badge badge-warning"><span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>star</span> {d.rating?.toFixed(1)} ({d.reviews?.length || 0})</span>
+                      )}
+                      {d.experience ? (
+                        <span className="badge badge-success">{d.experience} experience</span>
+                      ) : (
+                        <span className="badge badge-success">Call clinic for experience &amp; timings</span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <section className="profile-section">
                   <h2><span className="material-symbols-outlined">info</span> About</h2>
-                  <p className="profile-bio">{d.bio}</p>
+                  <p className="profile-bio">{d.bio || "Contact the clinic on WhatsApp for consultation details and timings."}</p>
                 </section>
 
                 <section className="profile-section">
                   <h2><span className="material-symbols-outlined">dashboard</span> Quick info</h2>
                   <div className="info-grid">
                     <div className="info-card"><div className="info-label"><span className="material-symbols-outlined">local_hospital</span> Hospital</div><div className="info-value">{d.hospital_id || "N/A"}</div></div>
-                    <div className="info-card"><div className="info-label"><span className="material-symbols-outlined">work_history</span> Experience</div><div className="info-value">{d.experience}</div></div>
-                    <div className="info-card"><div className="info-label"><span className="material-symbols-outlined">payments</span> Fee</div><div className="info-value">₹{d.fee}</div></div>
+                    <div className="info-card"><div className="info-label"><span className="material-symbols-outlined">work_history</span> Experience</div><div className="info-value">{d.experience || "Contact clinic"}</div></div>
+                    <div className="info-card"><div className="info-label"><span className="material-symbols-outlined">payments</span> Fee</div><div className="info-value">{d.fee ? `₹${d.fee}` : "Contact clinic"}</div></div>
                     <div className="info-card"><div className="info-label"><span className="material-symbols-outlined">schedule</span> Timings</div><div className="info-value">{timings || "Contact hospital"}</div></div>
                   </div>
                   <div className="doc-langs" style={{ marginTop: "var(--space-3)" }}>
@@ -94,10 +100,12 @@ export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }
                   </div>
                 </section>
 
-                <section className="profile-section">
-                  <h2><span className="material-symbols-outlined">school</span> Education</h2>
-                  <ul className="profile-list">{(d.education || []).map((e: string) => <li key={e}><span className="material-symbols-outlined">school</span>{e}</li>)}</ul>
-                </section>
+                {(d.education?.length ?? 0) > 0 && (
+                  <section className="profile-section">
+                    <h2><span className="material-symbols-outlined">school</span> Education</h2>
+                    <ul className="profile-list">{(d.education || []).map((e: string) => <li key={e}><span className="material-symbols-outlined">school</span>{e}</li>)}</ul>
+                  </section>
+                )}
 
                 <section className="profile-section">
                   <h2><span className="material-symbols-outlined">category</span> Specialisations</h2>
@@ -111,7 +119,7 @@ export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }
                     <span className="bk-icon"><span className="material-symbols-outlined">event_available</span></span>
                     <div><h3>Chat on WhatsApp</h3><p>Pick a date &amp; time slot, then confirm on WhatsApp</p></div>
                   </div>
-                  <div className="booking-fee"><span className="bf-amount">₹{d.fee}</span><span className="bf-label">consultation</span></div>
+                  <div className="booking-fee"><span className="bf-amount">{d.fee ? `₹${d.fee}` : "Contact"}</span><span className="bf-label">consultation</span></div>
 
                   <div className="bk-step">
                     <div className="bk-step-label"><span className="bk-num">1</span> Choose date</div>

@@ -83,6 +83,10 @@ function normalizeHospitalRow(row: Record<string, unknown>): Facility {
     specialties: Array.isArray(row.specialties) ? (row.specialties as string[]) : [],
     emergency: Boolean(row.emergency ?? false),
     address: typeof row.address === "string" ? row.address : undefined,
+    phone: typeof row.phone === "string" ? row.phone : undefined,
+    hours: typeof row.hours === "string" ? row.hours : undefined,
+    rating: typeof row.rating === "number" ? row.rating : undefined,
+    reviewCount: typeof row.reviews_count === "number" ? row.reviews_count : typeof row.reviewCount === "number" ? (row.reviewCount as number) : undefined,
   };
 }
 

@@ -24,9 +24,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       specialties: facility.specialties,
       emergency: facility.emergency,
       address: facility.address ?? `${facility.area}, ${facility.city}`,
-      phone: null,
-      hours: facility.emergency ? "Emergency 24/7 (verify with hospital)" : null,
-      opd_timing: null,
+      phone: facility.phone ?? null,
+      hours: facility.hours ?? (facility.emergency ? "Emergency 24/7 (verify with hospital)" : null),
+      opd_timing: facility.hours ?? null,
+      rating: facility.rating ?? 0,
+      reviews_count: facility.reviewCount ?? 0,
+      website: facility.website ?? null,
+      maps_url: facility.mapsUrl ?? null,
       verified: true,
     });
   }

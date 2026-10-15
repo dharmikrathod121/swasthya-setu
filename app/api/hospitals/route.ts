@@ -38,6 +38,11 @@ function normalizeDbRow(row: Record<string, unknown>): Facility {
     area,
     specialties: Array.isArray(row.specialties) ? (row.specialties as string[]) : [],
     emergency: false, // DB has no emergency column — never claim it.
+    address: typeof row.address === "string" ? row.address : area,
+    phone: typeof row.phone === "string" ? row.phone : undefined,
+    hours: typeof row.hours === "string" ? row.hours : undefined,
+    rating: typeof row.rating === "number" ? row.rating : undefined,
+    reviewCount: typeof row.reviews_count === "number" ? row.reviews_count : undefined,
   };
 }
 
