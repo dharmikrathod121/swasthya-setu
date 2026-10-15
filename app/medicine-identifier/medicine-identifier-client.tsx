@@ -5,6 +5,8 @@ import { toast } from "sonner";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
 const UPLOAD_BUCKET = "medicines";
+/** Hard stop so the processing panel can never spin forever on a stalled request. */
+const REQUEST_TIMEOUT_MS = 90_000;
 
 type Json = Record<string, unknown>;
 
@@ -29,6 +31,10 @@ function isPdf(file: File): boolean {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "AbortError";
+}
+
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -39,12 +45,12 @@ function readFileAsDataUrl(file: File): Promise<string> {
 }
 
 /** Upload to Supabase storage via /api/upload; fall back to an inline base64 data URL. */
-async function uploadOrInline(file: File, bucket: string): Promise<string> {
+async function uploadOrInline(file: File, bucket: string, signal?: AbortSignal): Promise<string> {
   try {
     const form = new FormData();
     form.append("file", file);
     form.append("bucket", bucket);
-    const res = await fetch("/api/upload", { method: "POST", body: form });
+    const res = await fetch("/api/upload", { method: "POST", body: form, signal });
     if (res.ok) {
       const data: unknown = await res.json().catch(() => null);
       if (isRec(data) && typeof data.url === "string" && data.url) return data.url;
@@ -181,14 +187,17 @@ export default function MedicineIdentifierClient() {
     setMatches(null);
     setShowResult(false);
     setResultError("");
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       setStatusText("Uploading photo…");
-      const imageUrl = await uploadOrInline(file, UPLOAD_BUCKET);
+      const imageUrl = await uploadOrInline(file, UPLOAD_BUCKET, controller.signal);
       setStatusText("Analyzing shape & imprint…");
       const res = await fetch("/api/medicine-identify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl }),
+        signal: controller.signal,
       });
       const data: unknown = await res.json().catch(() => null);
       if (!res.ok) {
@@ -203,11 +212,17 @@ export default function MedicineIdentifierClient() {
       setShowResult(true);
       finishProcessing(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Identification failed. Please try again.";
+      const message = isAbortError(err)
+        ? "That took too long. Please try again."
+        : err instanceof Error
+          ? err.message
+          : "Identification failed. Please try again.";
       setResultError(message);
       setShowResult(true);
       toast.error(message);
       finishProcessing(false);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 

@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "AI service is busy. Please try again in a minute." }, { status: result.status });
     }
 
-    return NextResponse.json({ analysis: result.content || "No analysis generated." });
+    return NextResponse.json({ analysis: sanitizeReply(result.content) || "No analysis generated." });
   } catch {
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
   }

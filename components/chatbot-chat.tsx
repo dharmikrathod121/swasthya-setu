@@ -36,6 +36,7 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
   const [error, setError] = React.useState<string | null>(null);
   const [used, setUsed] = React.useState(0);
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+  const [photoError, setPhotoError] = React.useState("");
   const logRef = React.useRef<HTMLDivElement>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const idRef = React.useRef(1);
@@ -77,7 +78,11 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
 
   function pickImage(file: File | undefined | null) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please choose an image file.");
+      return;
+    }
+    setPhotoError("");
     const reader = new FileReader();
     reader.onload = async () => {
       const raw = String(reader.result || "");
@@ -109,10 +114,11 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
     const attached = imageOverride !== undefined ? imageOverride : imageUrl;
     if ((!trimmed && !attached) || loading || gated) return;
     setError(null);
+    setPhotoError("");
     const userMsg: UIMessage = {
       id: idRef.current++,
       role: "user",
-      content: trimmed || (attached ? "Please analyze this image." : ""),
+      content: trimmed || (attached ? "What is this?" : ""),
       ...(attached ? { imageUrl: attached } : {}),
     };
     const nextMessages = [...messages, userMsg];
@@ -126,12 +132,12 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map((m) => {
-            // Send images as OpenAI-style parts; backend picks vision models.
+            // Send images as OpenAI-style parts; the backend picks vision models.
             if (m.role === "user" && m.imageUrl) {
               return {
                 role: "user",
                 content: [
-                  ...(m.content ? [{ type: "text", text: m.content }] : []),
+                  { type: "text", text: m.content || "What is this?" },
                   { type: "image_url", image_url: { url: m.imageUrl } },
                 ],
               };
@@ -279,22 +285,23 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
               type="file"
               accept="image/*"
               hidden
-              aria-label="Attach an image"
+              aria-label="Send photo"
               onChange={(e) => {
                 pickImage(e.target.files?.[0]);
                 e.target.value = "";
               }}
             />
             <button
-              className="btn btn-ghost btn-icon"
+              className="btn btn-ghost btn-photo"
               type="button"
-              aria-label="Attach an image"
+              aria-label="Send photo"
               disabled={loading}
               onClick={() => fileRef.current?.click()}
             >
               <span className="material-symbols-outlined" aria-hidden="true">
-                attach_file
+                add_a_photo
               </span>
+              <span>Photo</span>
             </button>
             {imageUrl && (
               <span style={{ position: "relative", display: "inline-flex" }}>
@@ -345,6 +352,20 @@ export function ChatbotChat({ suggestions = DEFAULT_SUGGESTIONS, maxFree = 3, in
               </span>
             </button>
           </form>
+          {photoError && (
+            <p
+              className="ais-photo-error"
+              role="alert"
+              style={{
+                margin: 0,
+                padding: "0 var(--space-6) var(--space-3)",
+                fontSize: "var(--text-xs)",
+                color: "var(--color-error)",
+              }}
+            >
+              {photoError}
+            </p>
+          )}
         </>
       )}
     </div>
