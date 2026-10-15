@@ -17,7 +17,11 @@ const topbarLinks = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoggedIn, loading, logout } = useAuth();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Open by default on tablet/desktop (icon rail / full rail), closed on
+  // phones where it is a slide-in drawer. The burger toggles both ways.
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [signingOut, setSigningOut] = useState(false);
@@ -68,12 +72,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <button
             className="topbar-burger"
             id="topbar-burger"
-            aria-label="Open navigation"
+            aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={sidebarOpen}
             aria-controls="app-sidebar"
             onClick={() => setSidebarOpen((v) => !v)}
           >
-            <span className="material-symbols-outlined">menu</span>
+            <span className="material-symbols-outlined">{sidebarOpen ? "close" : "menu"}</span>
           </button>
           <a href="/dashboard" className="topbar-logo">
             <span className="topbar-logo-icon">

@@ -1,16 +1,9 @@
-import { PublicHeader } from "@/components/public-header";
-import { PublicFooter } from "@/components/public-footer";
+import { AppLayout } from "@/components/app-layout";
 
-export default function PublicLandingLayout({
+export default function MedicineIdentifierLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <>
-      <PublicHeader />
-      <main className="flex-1">{children}</main>
-      <PublicFooter />
-    </>
-  );
+  return <AppLayout>{children}</AppLayout>;
 }

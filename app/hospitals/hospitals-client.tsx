@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useHospitals, useDoctors } from "@/lib/hooks/use-api";
-import { PublicHeader } from "@/components/public-header";
-import { PublicFooter } from "@/components/public-footer";
+import { AppLayout } from "@/components/app-layout";
 import {
   HOSPITALS,
   DOCTORS,
@@ -231,11 +230,10 @@ export default function HospitalsClient() {
   const results = filters.tab === "doctors" ? filteredDoctors : filteredFacilities;
 
   return (
-    <>
+    <AppLayout>
       <a href="#main" className="skip-link">Skip to main content</a>
-      <PublicHeader />
 
-      <main id="main">
+      <div id="main">
         <section className="hero-gradient" style={{ padding: "clamp(40px, 6vw, 72px) var(--space-5)" }}>
           <div className="hero-inner" style={{ maxWidth: 760 }}>
             <span className="eyebrow">Hospitals Directory</span>
@@ -478,9 +476,7 @@ export default function HospitalsClient() {
             </section>
           </div>
         </div>
-      </main>
-
-      <PublicFooter />
-    </>
+      </div>
+    </AppLayout>
   );
 }

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PublicHeader } from "@/components/public-header";
-import { PublicFooter } from "@/components/public-footer";
+import { AppLayout } from "@/components/app-layout";
 import { useAuth } from "@/components/shared/auth-provider";
 import { AuthModal } from "@/components/shared/auth-modal";
 import { doctorBookingLink } from "@/lib/whatsapp";
@@ -54,11 +53,10 @@ export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }
   };
 
   return (
-    <>
-      <PublicHeader />
-      <main id="main">
+    <AppLayout>
+      <div id="main">
         <div className="profile-wrap">
-          <Link href="/doctors" className="profile-back"><span className="material-symbols-outlined">arrow_back</span> Back to doctors</Link>
+          <Link href="/hospitals?tab=doctors" className="profile-back"><span className="material-symbols-outlined">arrow_back</span> Back to doctors</Link>
 
           <div id="profile-content">
             <div className="profile-layout">
@@ -144,8 +142,8 @@ export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }
             </div>
           </div>
         </div>
-      </main>
-      <PublicFooter />
-    </>
+      </div>
+      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
+    </AppLayout>
   );
 }

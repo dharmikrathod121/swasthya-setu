@@ -1,5 +1,4 @@
-import { PublicHeader } from "@/components/public-header";
-import { PublicFooter } from "@/components/public-footer";
+import { AppLayout } from "@/components/app-layout";
 import ReportAnalyzerClient from "./report-analyzer-client";
 
 export const metadata = {
@@ -9,10 +8,8 @@ export const metadata = {
 
 export default function Page() {
   return (
-    <>
-      <PublicHeader />
+    <AppLayout>
       <ReportAnalyzerClient />
-      <PublicFooter />
-    </>
+    </AppLayout>
   );
 }

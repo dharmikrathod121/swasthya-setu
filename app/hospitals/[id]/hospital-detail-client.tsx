@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { PublicHeader } from "@/components/public-header";
-import { PublicFooter } from "@/components/public-footer";
+import { AppLayout } from "@/components/app-layout";
 import { useReviews, useQueue } from "@/lib/hooks/use-api";
 import { AuthModal } from "@/components/shared/auth-modal";
 import { waLink } from "@/lib/whatsapp";
@@ -112,9 +111,8 @@ export default function HospitalDetailClient({ id }: { id: string }) {
   if (!hospital) return <div className="container" style={{ padding: "var(--space-8)" }}>Hospital not found</div>;
 
   return (
-    <>
-      <PublicHeader />
-      <main id="main">
+    <AppLayout>
+      <div id="main">
         <div className="detail" id="detail-root">
           <Link href="/hospitals" className="detail-back"><span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span> All hospitals</Link>
 
@@ -316,10 +314,9 @@ export default function HospitalDetailClient({ id }: { id: string }) {
             )}
           </div>
         </div>
-      </main>
-      <PublicFooter />
+      </div>
       <div id="toast" className={`toast${toast ? " show" : ""}`} role="status" aria-live="polite">{toast}</div>
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
-    </>
+    </AppLayout>
   );
 }

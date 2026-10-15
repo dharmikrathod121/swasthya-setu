@@ -4346,7 +4346,7 @@ h4 { font-size: var(--text-lg); }
 }
 
 .topbar-burger {
-  display: none;
+  display: flex;
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
@@ -4517,6 +4517,9 @@ h4 { font-size: var(--text-lg); }
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--space-4) var(--space-3);
+  /* Hidden by default on every size — the burger (body.sidebar-open)
+     slides it in. Desktop starts open via initial React state. */
+  transform: translateX(-100%);
   transition: width var(--duration-normal) var(--ease-out),
               transform var(--duration-normal) var(--ease-out);
 }
@@ -4644,11 +4647,18 @@ body.sidebar-open .sidebar-backdrop {
 
 /* ---------- Main Content ---------- */
 .app-main {
-  margin-left: var(--sidebar-width);
+  margin-left: 0;
   margin-top: var(--topbar-height);
   padding: var(--space-6);
   min-height: calc(100vh - var(--topbar-height));
   background: var(--app-bg);
+  transition: margin-left var(--duration-normal) var(--ease-out);
+}
+body.sidebar-open .app-main { margin-left: var(--sidebar-width); }
+
+/* Backdrop is a mobile-only drawer scrim — never on tablet/desktop. */
+@media (min-width: 768px) {
+  .sidebar-backdrop { display: none; }
 }
 
 .app-footer {
@@ -4671,9 +4681,10 @@ body.sidebar-open .sidebar-backdrop {
    RESPONSIVE
    ============================================ */
 @media (max-width: 1024px) {
-  /* Tablet: collapse sidebar to icon rail */
-  .app-sidebar { width: var(--sidebar-collapsed); padding: var(--space-4) var(--space-2); }
-  .app-main { margin-left: var(--sidebar-collapsed); }
+  /* Tablet: sidebar becomes a slim icon rail, only when opened */
+  .app-main { margin-left: 0; }
+  body.sidebar-open .app-main { margin-left: var(--sidebar-collapsed); }
+  body.sidebar-open .app-sidebar { width: var(--sidebar-collapsed); padding: var(--space-4) var(--space-2); }
   .sidebar-group-label,
   .sidebar-link .label,
   .sidebar-footer .theme-label { display: none; }
@@ -4691,6 +4702,7 @@ body.sidebar-open .sidebar-backdrop {
     box-shadow: var(--shadow-xl);
   }
   .app-main { margin-left: 0; padding: var(--space-4); }
+  body.sidebar-open .app-main { margin-left: 0; }
   .topbar-burger { display: flex; }
   .topbar-search { display: none; }
   .sidebar-group-label,
