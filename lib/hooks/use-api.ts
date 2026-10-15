@@ -16,12 +16,6 @@ export function useDoctors(params?: Record<string, string>) {
   return useSWR(url, fetcher);
 }
 
-export function useAppointments(userId?: string) {
-  const qs = userId ? `?user_id=${userId}` : "";
-  const url = `/api/appointments${qs}`;
-  return useSWR(userId ? url : null, fetcher);
-}
-
 export function useMedicines(params?: Record<string, string>) {
   const qs = new URLSearchParams(params ?? {}).toString();
   const url = `/api/medicines${qs ? `?${qs}` : ""}`;

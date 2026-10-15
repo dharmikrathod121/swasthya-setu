@@ -1,9 +1,19 @@
-export const metadata = {
-  title: "Medicine Catalog | Swasthya Setu",
-  description: "Look up common medicines by name, category or use.",
-};
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Page() {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = q.trim();
+    router.push(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
+  };
+
   return (
     <>
       <main id="main">
@@ -17,7 +27,7 @@ export default function Page() {
                 Anyone can browse results freely — sign in to identify a pill with the AI camera tool.
               </p>
 
-              <form className="mc-search" id="mc-search-form" role="search" autoComplete="off">
+              <form className="mc-search" id="mc-search-form" role="search" autoComplete="off" onSubmit={onSubmit}>
                 <div className="mc-search-box">
                   <span className="search-bar-icon material-symbols-outlined">search</span>
                   <input
@@ -28,15 +38,17 @@ export default function Page() {
                     aria-label="Search medicines"
                     aria-autoComplete="list"
                     aria-controls="mc-autocomplete"
-                    aria-expanded="false" />
-                  <button
-                    type="button"
+                    aria-expanded="false"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)} />
+                  <Link
+                    href="/medicine-identifier"
                     className="mc-camera"
                     id="mc-camera"
                     aria-label="Identify a medicine with the AI camera (requires sign in)">
                     <span className="material-symbols-outlined">camera_alt</span>
                     <span className="mc-camera-tip">AI Identifier · sign in</span>
-                  </button>
+                  </Link>
                   <ul className="mc-autocomplete" id="mc-autocomplete" role="listbox" aria-label="Medicine suggestions" hidden></ul>
                 </div>
               </form>
@@ -60,6 +72,10 @@ export default function Page() {
             </div>
 
             <div className="mc-results" id="mc-results">{/*populated by JS*/}</div>
+            <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-4)" }}>
+              Browse the full catalog via <Link href="/search" style={{ color: "var(--color-primary)", fontWeight: 600 }}>Search</Link>
+              {" "}or identify a pill with the <Link href="/medicine-identifier" style={{ color: "var(--color-primary)", fontWeight: 600 }}>AI medicine identifier</Link>.
+            </p>
           </section>
         </main>
     </>

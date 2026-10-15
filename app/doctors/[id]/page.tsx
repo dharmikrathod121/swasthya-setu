@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!doctor) return { title: "Doctor not found — Swasthya Setu" };
   return {
     title: `${doctor.name} — Swasthya Setu`,
-    description: `View ${doctor.name}'s bio, education, specialisations, clinic timings, fees and patient reviews. Book an appointment online.`,
+    description: `View ${doctor.name}'s bio, education, specialisations, clinic timings, fees and patient reviews. Chat on WhatsApp to consult.`,
   };
 }
 

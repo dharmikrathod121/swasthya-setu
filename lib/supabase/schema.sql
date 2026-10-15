@@ -73,28 +73,27 @@ create table if not exists public.doctor_clinic_timings (
 create index idx_clinic_timings_doctor on public.doctor_clinic_timings (doctor_id);
 
 -- ============================================================
--- APPOINTMENTS
+-- APPOINTMENTS — Removed for demo: WhatsApp instead
 -- ============================================================
-create table if not exists public.appointments (
-  id uuid primary key default uuid_generate_v4(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  doctor_id uuid references public.doctors(id) on delete set null,
-  hospital_id uuid references public.hospitals(id) on delete set null,
-  patient_name text not null,
-  phone text not null,
-  date text not null,
-  time text not null,
-  type text default 'In-Person Visit',
-  reason text,
-  notes text,
-  status text default 'upcoming' check (status in ('upcoming', 'completed', 'cancelled')),
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create index idx_appointments_user on public.appointments (user_id, status, date);
-create index idx_appointments_doctor on public.appointments (doctor_id, date);
-create index idx_appointments_hospital on public.appointments (hospital_id);
+-- REMOVED: create table if not exists public.appointments (
+-- REMOVED:   id uuid primary key default uuid_generate_v4(),
+-- REMOVED:   user_id uuid references auth.users(id) on delete cascade not null,
+-- REMOVED:   doctor_id uuid references public.doctors(id) on delete set null,
+-- REMOVED:   hospital_id uuid references public.hospitals(id) on delete set null,
+-- REMOVED:   patient_name text not null,
+-- REMOVED:   phone text not null,
+-- REMOVED:   date text not null,
+-- REMOVED:   time text not null,
+-- REMOVED:   type text default 'In-Person Visit',
+-- REMOVED:   reason text,
+-- REMOVED:   notes text,
+-- REMOVED:   status text default 'upcoming' check (status in ('upcoming', 'completed', 'cancelled')),
+-- REMOVED:   created_at timestamptz default now(),
+-- REMOVED:   updated_at timestamptz default now()
+-- REMOVED: );
+-- REMOVED: create index idx_appointments_user on public.appointments (user_id, status, date);
+-- REMOVED: create index idx_appointments_doctor on public.appointments (doctor_id, date);
+-- REMOVED: create index idx_appointments_hospital on public.appointments (hospital_id);
 
 -- ============================================================
 -- REVIEWS

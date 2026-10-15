@@ -5,8 +5,8 @@ export function PublicFooter() {
     <footer className="landing-footer">
       <div className="lf-inner">
         <div className="lf-copy">
-          &copy; 2024 Swasthya Setu &middot; Ministry of Health &amp; Family Welfare,
-          Govt. of India
+          &copy; 2026 Swasthya Setu &middot; For informational purposes only.
+          Not medical advice.
         </div>
         <nav className="lf-links" aria-label="Footer">
           <Link href="/privacy">Privacy</Link>

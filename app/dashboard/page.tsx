@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AppLayout } from "@/components/app-layout";
 import { useState, useEffect } from "react";
 
@@ -19,24 +20,24 @@ const featureCards = [
     color: "accent",
   },
   {
-    href: "/doctors",
+    href: "/hospitals?tab=doctors",
     icon: "badge",
     title: "Doctors Directory",
     desc: "Search verified doctors by specialty, experience, language, and patient ratings.",
     color: "success",
   },
   {
-    href: "/appointment",
-    icon: "event_available",
-    title: "Doctor Appointment Booking",
-    desc: "Book appointments with hospitals and doctors in a few simple taps.",
+    href: "/chatbot",
+    icon: "robot_2",
+    title: "AI Health Assistant",
+    desc: "Ask the AI assistant about symptoms, medicines, and healthy habits — with image upload.",
     color: "primary",
   },
   {
-    href: "/chat",
-    icon: "forum",
-    title: "Free Doctor Chat Guidance",
-    desc: "Chat with verified doctors for free guidance and second opinions.",
+    href: "/emergency",
+    icon: "call",
+    title: "Emergency — Call 108",
+    desc: "One tap calls 108. No voice triage on web — direct phone redirect.",
     color: "accent",
   },
   {
@@ -51,9 +52,9 @@ const featureCards = [
 const emergencyCards = [
   {
     href: "/emergency",
-    icon: "graphic_eq",
-    title: "Voice-First Triage",
-    desc: "Describe symptoms by speaking in your own language. Built for low-literacy and elderly users, and works offline.",
+    icon: "call",
+    title: "Emergency — Call 108",
+    desc: "One tap opens your phone dialer for 108. Plus WhatsApp care line and what-to-say steps.",
     color: "error",
   },
   {
@@ -67,7 +68,7 @@ const emergencyCards = [
 
 const aiCards = [
   {
-    href: "/ai-services",
+    href: "/report-analyzer",
     icon: "description",
     title: "AI Medical Report Analyzer",
     desc: "Upload a report and get OCR-powered, plain-language insights and clear next steps.",
@@ -121,7 +122,7 @@ const colorMap: Record<string, { bg: string; text: string }> = {
 function FeatureCard({ href, icon, title, desc, color }: (typeof featureCards)[0]) {
   const { bg, text } = colorMap[color] || colorMap.primary;
   return (
-    <a href={href} className="feature-card reveal">
+    <Link href={href} className="feature-card reveal">
       <div className="feature-card-icon" style={{ background: bg, color: text }}>
         <span className="material-symbols-outlined">{icon}</span>
       </div>
@@ -130,7 +131,7 @@ function FeatureCard({ href, icon, title, desc, color }: (typeof featureCards)[0
       <div className="feature-card-action">
         Open <span className="material-symbols-outlined">arrow_forward</span>
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -173,17 +174,17 @@ export default function DashboardPage() {
         <section className="section-header reveal" id="hero" style={{ marginBottom: "var(--space-10)" }}>
           <div className="section-eyebrow">Swasthya Setu</div>
           <h1>One app for every health need</h1>
-          <p>Find care near you, talk to doctors, and use AI tools to understand your health — all in one place.</p>
+          <p>Find care near you, chat on WhatsApp, and use AI tools to understand your health — all in one place.</p>
         </section>
 
-        {/* Find & Book Care */}
+        {/* Find Care */}
         <section className="reveal" id="find-book" style={{ marginBottom: "var(--space-10)" }}>
           <div
             className="flex items-center justify-between mb-6 pb-2"
             style={{ borderBottom: "1px solid var(--border-subtle)" }}
           >
             <h2 className="text-2xl" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
-              Find &amp; Book Care
+              Find Care
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -222,7 +223,7 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {aiCards.map((card, idx) => (
-              <a
+              <Link
                 key={card.title}
                 href={card.href}
                 className={`feature-card reveal ${card.color === "ai" ? "bento-icon-ai" : ""}`}
@@ -236,7 +237,7 @@ export default function DashboardPage() {
                 <div className="feature-card-action">
                   Open <span className="material-symbols-outlined">arrow_forward</span>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </section>

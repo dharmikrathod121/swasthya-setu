@@ -29,7 +29,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Swasthya Setu — One app for every health need",
-  description: "Find hospitals, book doctors, and use AI health tools in Rajkot. Voice triage, AI report analysis, medicine ID, and free doctor chat.",
+  description: "Find hospitals, find doctors, and use AI health tools in Rajkot. Voice triage, AI report analysis, medicine ID, and free doctor chat.",
 };
 
 export default function RootLayout({
@@ -58,7 +58,7 @@ export default function RootLayout({
         className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} min-h-full flex flex-col font-sans antialiased`}
       >
         <ThemeProvider
-          attribute="class"
+          attribute="data-theme"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange

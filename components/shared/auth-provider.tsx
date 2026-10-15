@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<{ error?: string }>;
-  signup: (email: string, password: string) => Promise<{ error?: string }>;
+  signup: (email: string, password: string) => Promise<{ error?: string; needsEmailConfirm?: true }>;
   logout: () => Promise<void>;
   requireAuth: (callback: () => void) => void;
 }
@@ -28,16 +28,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+    router.push("/dashboard");
+    router.refresh();
     return {};
-  }, []);
+  }, [router]);
 
   const signup = useCallback(async (email: string, password: string) => {
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error: error.message };
+    // Email confirmation ON → no session yet: stay put so the caller can
+    // show the "check your email" state instead of pushing to dashboard.
+    if (!data.session) return { needsEmailConfirm: true as const };
+    router.push("/dashboard");
+    router.refresh();
     return {};
-  }, []);
+  }, [router]);
 
   const logout = useCallback(async () => {
     const { createClient } = await import("@/lib/supabase/client");

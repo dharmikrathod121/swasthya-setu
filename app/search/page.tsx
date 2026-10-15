@@ -1,170 +1,165 @@
+"use client";
+
+import React, { Suspense } from "react";
 import Link from "next/link";
-import { AppLayout } from "@/components/app-layout";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function SearchPage() {
+interface SearchResults {
+  hospitals: Array<{ id: string; name: string; city?: string; area?: string; type?: string }>;
+  doctors: Array<{ id: string; name: string; specialty?: string; hospitalName?: string }>;
+  medicines: Array<{ id?: string; name: string }>;
+  total: number;
+}
+
+function SearchInner() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const q = params.get("q") ?? "";
+  const [input, setInput] = React.useState(q);
+  const [data, setData] = React.useState<SearchResults | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => setInput(q), [q]);
+
+  React.useEffect(() => {
+    if (!q.trim()) {
+      setData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Search failed (${r.status})`);
+        return r.json();
+      })
+      .then((j) => {
+        if (!cancelled) setData(j);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        if (e instanceof Error && e.name === "AbortError") {
+          setError("Search timed out. Please try again.");
+        } else {
+          setError(e instanceof Error ? e.message : "Search failed");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [q]);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    router.push(`/search?q=${encodeURIComponent(input.trim())}`);
+  }
+
   return (
-    <AppLayout>
-      <div className="container section" style={{ paddingTop: "var(--space-8)" }}>
-        <div className="reveal" style={{ marginBottom: "var(--space-8)" }}>
-          <div className="search-bar" style={{ maxWidth: "100%", marginBottom: "var(--space-4)" }}>
-            <span className="material-symbols-outlined search-bar-icon">search</span>
-            <input type="text" className="search-bar-input" placeholder="Search hospitals, doctors, clinics, medicines..." defaultValue="Cardiologist in Delhi" aria-label="Search" />
-            <button className="search-bar-clear visible" id="search-clear" aria-label="Clear search">
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
-            </button>
-          </div>
+    <div className="container section" style={{ paddingTop: "var(--space-8)" }}>
+      <form onSubmit={submit} className="search-bar" style={{ display: "flex", alignItems: "center", gap: 8, maxWidth: "100%", marginBottom: "var(--space-4)", position: "relative" }}>
+        <span className="material-symbols-outlined search-bar-icon" style={{ position: "absolute", left: 12 }}>search</span>
+        <input
+          type="text"
+          className="search-bar-input"
+          style={{ flex: 1, paddingLeft: 40 }}
+          placeholder="AI search — try 'cardiologist in Ahmedabad' or 'fever what to do?'"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          aria-label="Search"
+        />
+        <button type="submit" className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}>Search</button>
+      </form>
 
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Showing results for <strong>&quot;Cardiologist in Delhi&quot;</strong> — 12 results
-            </p>
-            <div className="filter-bar">
-              <button className="filter-pill active" data-group="type">All</button>
-              <button className="filter-pill" data-group="type">Hospitals</button>
-              <button className="filter-pill" data-group="type">Doctors</button>
-              <button className="filter-pill" data-group="type">Clinics</button>
-              <button className="filter-pill" data-group="sort">Relevance</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <article className="card reveal">
-              <div className="card-body flex flex-col md:flex-row gap-4">
-                <div className="w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--color-primary-soft) 0%, var(--color-base) 100%)" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 48, color: "var(--color-primary)" }}>local_hospital</span>
-                </div>
-                <div className="flex-grow">
-                  <div className="flex items-start justify-between mb-1">
-                    <div>
-                      <span className="badge badge-primary mb-2">Hospital</span>
-                      <h3 className="text-lg font-bold">AIIMS Delhi</h3>
-                    </div>
-                    <div className="hospital-card-rating">
-                      <span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>star</span>
-                      4.8
-                    </div>
-                  </div>
-                  <p className="text-sm mb-2" style={{ color: "var(--text-secondary)" }}>Ansari Nagar, New Delhi, Delhi 110029</p>
-                  <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Premier multi-speciality government hospital with dedicated cardiology department, 24/7 emergency, and advanced cardiac care facilities.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="badge badge-success">Emergency</span>
-                    <span className="badge badge-primary">Cardiology</span>
-                    <span className="badge badge-primary">Pharmacy</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article className="card reveal">
-              <div className="card-body flex flex-col md:flex-row gap-4">
-                <div className="flex-shrink-0">
-                  <div className="doctor-avatar-placeholder" style={{ width: 96, height: 96 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 48 }}>person</span>
-                  </div>
-                </div>
-                <div className="flex-grow">
-                  <div className="flex items-start justify-between mb-1">
-                    <div>
-                      <span className="badge badge-accent mb-2">Doctor</span>
-                      <h3 className="text-lg font-bold">Dr. R. K. Sharma</h3>
-                      <p className="text-sm font-semibold" style={{ color: "var(--color-primary)" }}>Cardiologist · AIIMS Delhi</p>
-                    </div>
-                    <div className="hospital-card-rating">
-                      <span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>star</span>
-                      4.9
-                    </div>
-                  </div>
-                  <p className="text-sm mb-2" style={{ color: "var(--text-secondary)" }}>15+ years experience · Hindi, English, Marathi</p>
-                  <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Specializes in interventional cardiology, heart failure management, and preventive cardiology. Over 5,000 successful procedures.</p>
-                  <div className="flex gap-2">
-                    <button className="btn btn-secondary btn-sm">View Profile</button>
-                    <Link href="/appointment" className="btn btn-primary btn-sm">Book</Link>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article className="card reveal">
-              <div className="card-body flex flex-col md:flex-row gap-4">
-                <div className="w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--color-accent-soft) 0%, var(--color-base) 100%)" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 48, color: "var(--color-accent)" }}>medical_services</span>
-                </div>
-                <div className="flex-grow">
-                  <div className="flex items-start justify-between mb-1">
-                    <div>
-                      <span className="badge badge-warning mb-2">Clinic</span>
-                      <h3 className="text-lg font-bold">Heart Care Clinic</h3>
-                    </div>
-                    <div className="hospital-card-rating">
-                      <span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>star</span>
-                      4.6
-                    </div>
-                  </div>
-                  <p className="text-sm mb-2" style={{ color: "var(--text-secondary)" }}>Lajpat Nagar, New Delhi</p>
-                  <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Specialized cardiac clinic offering ECG, stress testing, and echocardiogram. Led by Dr. R. K. Sharma.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="badge badge-success">Open Today</span>
-                    <span className="badge badge-primary">ECG</span>
-                    <span className="badge badge-primary">2D Echo</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <aside>
-            <div className="sticky" style={{ top: "calc(var(--nav-height) + var(--space-6))" }}>
-              <div className="sidebar-widget mb-6 reveal">
-                <div className="sidebar-widget-header">
-                  <h4 className="font-bold">Filters</h4>
-                </div>
-                <div className="sidebar-widget-body flex flex-col gap-4">
-                  <div>
-                    <label className="input-label mb-2">Distance</label>
-                    <select className="input-field" defaultValue="Within 5 km">
-                      <option>Within 5 km</option>
-                      <option>Within 10 km</option>
-                      <option>Within 25 km</option>
-                      <option>Any distance</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="input-label mb-2">Rating</label>
-                    <select className="input-field" defaultValue="4+ Stars">
-                      <option>4+ Stars</option>
-                      <option>3+ Stars</option>
-                      <option>Any rating</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="input-label mb-2">Availability</label>
-                    <select className="input-field" defaultValue="Available Today">
-                      <option>Available Today</option>
-                      <option>Available This Week</option>
-                      <option>Any time</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sidebar-widget reveal">
-                <div className="sidebar-widget-header">
-                  <h4 className="font-bold">Nearby Locations</h4>
-                </div>
-                <div className="sidebar-widget-body flex flex-col gap-2">
-                  {["Connaught Place", "Lajpat Nagar", "Rajouri Garden"].map((loc) => (
-                    <Link key={loc} href="/search" className="flex items-center gap-2 p-2 rounded-lg text-sm transition-colors" style={{ color: "var(--text-secondary)" }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--color-primary)" }}>location_on</span> {loc}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
+      <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: "var(--space-6)" }}>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          {loading ? (
+            <>Searching for <strong>&quot;{q}&quot;</strong>…</>
+          ) : !q ? (
+            <>Type above to search hospitals, doctors and clinics.</>
+          ) : data ? (
+            <>Showing results for <strong>&quot;{q}&quot;</strong> — {data.total} results</>
+          ) : null}
+          {error && (
+            <span style={{ color: "red" }}>
+              {" "}{error}{" "}
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => router.refresh()}
+              >
+                Retry
+              </button>
+            </span>
+          )}
+        </p>
+        <div className="flex gap-2">
+          <Link href="/hospitals" className="btn btn-secondary btn-sm">Hospitals</Link>
+          <Link href={`/chatbot?q=${encodeURIComponent(q)}`} className="btn btn-secondary btn-sm">Ask AI</Link>
         </div>
       </div>
-    </AppLayout>
+
+      {data && (
+        <div className="flex flex-col gap-4">
+          {data.hospitals.map((h) => (
+            <Link key={h.id} href={`/hospitals/${h.id}`} className="card">
+              <div className="card-body">
+                <span className="badge badge-primary">Hospital</span>
+                <h3 className="text-lg font-bold">{h.name}</h3>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                  {[h.area, h.city].filter(Boolean).join(", ")}
+                </p>
+              </div>
+            </Link>
+          ))}
+          {data.doctors.map((d) => (
+            <Link key={d.id} href={`/hospitals?tab=doctors&q=${encodeURIComponent(d.name)}`} className="card">
+              <div className="card-body">
+                <span className="badge badge-accent">Doctor</span>
+                <h3 className="text-lg font-bold">{d.name}</h3>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                  {[d.specialty, d.hospitalName].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+            </Link>
+          ))}
+          {data.medicines.map((m, i) => (
+            <div key={m.id ?? i} className="card">
+              <div className="card-body">
+                <span className="badge badge-warning">Medicine</span>
+                <h3 className="text-lg font-bold">{m.name}</h3>
+              </div>
+            </div>
+          ))}
+          {data.total === 0 && (
+            <div className="card">
+              <div className="card-body">
+                <p>No matches found. Try a specialty (e.g. cardiology), a city, or <Link href={`/chatbot?q=${encodeURIComponent(q)}`}>ask the AI assistant</Link>.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function SearchPage() {
+  // NOTE: app/search/layout.tsx already wraps this page in <AppLayout />.
+  // Do NOT wrap again here — double-wrapping renders the header/footer twice.
+  return (
+    <Suspense fallback={<div className="container section">Loading search…</div>}>
+      <SearchInner />
+    </Suspense>
   );
 }

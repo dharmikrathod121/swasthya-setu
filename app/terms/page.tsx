@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Terms of Service — Swasthya Setu",
   description:
-    "Terms of service for Swasthya Setu, the national healthcare platform by the Ministry of Health & Family Welfare, Govt. of India.",
+    "Terms of service for Swasthya Setu, an independent health information platform.",
 };
 
 export default function TermsPage() {
@@ -21,11 +21,11 @@ export default function TermsPage() {
         {[
           {
             title: "1. Acceptance of Terms",
-            body: "By accessing or using the Swasthya Setu platform (&ldquo;Service&rdquo;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service. The Service is operated by the Ministry of Health & Family Welfare, Government of India.",
+            body: "By accessing or using the Swasthya Setu platform (&ldquo;Service&rdquo;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service. The Service is operated by the Swasthya Setu team.",
           },
           {
             title: "2. Description of Service",
-            body: "Swasthya Setu provides a digital health platform including hospital and doctor search, appointment booking, AI health tools, telemedicine consultations, voice triage, medicine catalog, and related services. The Service is intended for informational purposes and does not replace professional medical advice.",
+            body: "Swasthya Setu provides a digital health platform including hospital and doctor search, chat on WhatsApp, AI health tools, telemedicine consultations, voice triage, medicine catalog, and related services. The Service is intended for informational purposes and does not replace professional medical advice.",
           },
           {
             title: "3. User Accounts",
@@ -45,11 +45,11 @@ export default function TermsPage() {
           },
           {
             title: "7. Intellectual Property",
-            body: "All content, features, and functionality of the Service, including but not limited to text, graphics, logos, icons, images, audio clips, and software, are the exclusive property of the Ministry of Health & Family Welfare, Govt. of India, and are protected by Indian and international copyright, trademark, and other intellectual property laws.",
+            body: "All content, features, and functionality of the Service, including but not limited to text, graphics, logos, icons, images, audio clips, and software, are the exclusive property of Swasthya Setu, and are protected by Indian and international copyright, trademark, and other intellectual property laws.",
           },
           {
             title: "8. Limitation of Liability",
-            body: "To the maximum extent permitted by law, the Ministry of Health & Family Welfare shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses resulting from your use of the Service.",
+            body: "To the maximum extent permitted by law, Swasthya Setu shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses resulting from your use of the Service.",
           },
           {
             title: "9. Termination",
@@ -61,7 +61,7 @@ export default function TermsPage() {
           },
           {
             title: "11. Contact Information",
-            body: "For questions about these Terms of Service, please contact us at legal@swasthyasetu.gov.in or write to: Swasthya Setu Support, Ministry of Health & Family Welfare, Govt. of India, Nirman Bhawan, New Delhi - 110108.",
+            body: "For questions about these Terms of Service, please contact us at support@swasthyasetu.in.",
           },
         ].map((section) => (
           <div key={section.title} className="card reveal">

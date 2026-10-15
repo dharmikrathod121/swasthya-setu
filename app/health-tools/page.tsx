@@ -1,11 +1,7 @@
-import { PublicHeader } from "@/components/public-header";
-import { PublicFooter } from "@/components/public-footer";
-
 export default function HealthToolsPage() {
   return (
     <>
-      <PublicHeader />
-      <main id="main">
+      <div id="main">
         <section className="tools-hero">
           <div className="hero-inner">
             <span className="section-eyebrow">Wellness Toolkit</span>
@@ -138,9 +134,7 @@ export default function HealthToolsPage() {
             ))}
           </div>
         </div>
-      </main>
-
-      <PublicFooter />
+      </div>
 
       <div className="entry-overlay" id="entryOverlay" role="dialog" aria-modal="true" aria-labelledby="entryTitle" inert={true}>
         <div className="entry-modal">

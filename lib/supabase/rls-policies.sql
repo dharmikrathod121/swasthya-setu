@@ -6,7 +6,8 @@
 alter table public.hospitals enable row level security;
 alter table public.doctors enable row level security;
 alter table public.medicines enable row level security;
-alter table public.appointments enable row level security;
+-- Removed for demo: WhatsApp instead
+-- REMOVED: alter table public.appointments enable row level security;
 alter table public.reviews enable row level security;
 alter table public.queue_reports enable row level security;
 alter table public.chat_messages enable row level security;
@@ -21,11 +22,11 @@ create policy "Public read doctors" on public.doctors for select using (true);
 -- MEDICINES: public read
 create policy "Public read medicines" on public.medicines for select using (true);
 
--- APPOINTMENTS: users can CRUD their own
-create policy "Users can create own appointments" on public.appointments for insert with check (auth.uid() = user_id);
-create policy "Users can read own appointments" on public.appointments for select using (auth.uid() = user_id);
-create policy "Users can update own appointments" on public.appointments for update using (auth.uid() = user_id);
-create policy "Users can delete own appointments" on public.appointments for delete using (auth.uid() = user_id);
+-- APPOINTMENTS policies — Removed for demo: WhatsApp instead
+-- REMOVED: create policy "Users can create own appointments" on public.appointments for insert with check (auth.uid() = user_id);
+-- REMOVED: create policy "Users can read own appointments" on public.appointments for select using (auth.uid() = user_id);
+-- REMOVED: create policy "Users can update own appointments" on public.appointments for update using (auth.uid() = user_id);
+-- REMOVED: create policy "Users can delete own appointments" on public.appointments for delete using (auth.uid() = user_id);
 
 -- REVIEWS: anyone can read, authenticated users can create
 create policy "Public read reviews" on public.reviews for select using (true);

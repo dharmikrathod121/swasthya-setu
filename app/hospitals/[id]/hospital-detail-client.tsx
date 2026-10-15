@@ -6,10 +6,11 @@ import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { useReviews, useQueue } from "@/lib/hooks/use-api";
 import { AuthModal } from "@/components/shared/auth-modal";
+import { waLink } from "@/lib/whatsapp";
 
 function TypeBadge({ type }: { type: string }) {
-  const cls = type === "Govt" ? "type-badge-govt" : "type-badge-private";
-  const icon = type === "Govt" ? "account_balance" : "business_center";
+  const cls = type === "Govt" ? "type-badge-govt" : type === "Clinic" ? "type-badge-clinic" : "type-badge-private";
+  const icon = type === "Govt" ? "account_balance" : type === "Clinic" ? "stethoscope" : "business_center";
   return (
     <span className={`type-badge ${cls}`}>
       <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{icon}</span>
@@ -33,16 +34,23 @@ interface HospitalDetail {
   id: string;
   name: string;
   type: string;
-  rating?: number;
-  reviews_count?: number;
-  distance_km?: number;
+  specialties?: string[];
+  emergency?: boolean;
+  verified?: boolean;
   logo_color?: string;
   queue_status: string;
-  address?: string;
-  phone?: string;
-  hours?: string;
-  opd_timing?: string;
+  address?: string | null;
+  phone?: string | null;
+  hours?: string | null;
+  opd_timing?: string | null;
   last_updated?: string;
+}
+
+interface DoctorRow {
+  id: string;
+  name?: string;
+  specialty?: string;
+  hospital_name?: string;
 }
 
 interface ReviewRow {
@@ -69,6 +77,7 @@ export default function HospitalDetailClient({ id }: { id: string }) {
   const [queueFormOpen, setQueueFormOpen] = useState(false);
   const tabs = ["specialities", "doctors", "reviews", "queue"];
   const [activeTab, setActiveTab] = useState(tabs[0]);
+  const [doctors, setDoctors] = useState<DoctorRow[]>([]);
   const { data: reviewsData, mutate: mutateReviews } = useReviews(id);
   const { data: queueData, mutate: mutateQueue } = useQueue(id);
 
@@ -77,6 +86,10 @@ export default function HospitalDetailClient({ id }: { id: string }) {
       .then((r) => r.json())
       .then((data) => { setHospital(data); setLoading(false); })
       .catch(() => setLoading(false));
+    fetch(`/api/doctors?hospital=${encodeURIComponent(id)}`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setDoctors(data); })
+      .catch(() => {});
   }, [id]);
 
   const submitReview = async () => {
@@ -116,8 +129,16 @@ export default function HospitalDetailClient({ id }: { id: string }) {
                   <h1>{hospital.name}</h1>
                   <div className="detail-sub">
                     <TypeBadge type={hospital.type} />
-                    <span className="rating-pill">⭐ {hospital.rating?.toFixed(1)} ({hospital.reviews_count || 0})</span>
-                    <span className="distance-pill">📍 {hospital.distance_km?.toFixed(1)} km</span>
+                    <span className="badge badge-success">
+                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>verified</span>
+                      Verified listing
+                    </span>
+                    {hospital.emergency && (
+                      <span className="badge badge-primary">
+                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>emergency</span>
+                        Emergency
+                      </span>
+                    )}
                     <QueueBadge level={hospital.queue_status} />
                   </div>
                 </div>
@@ -126,10 +147,10 @@ export default function HospitalDetailClient({ id }: { id: string }) {
 
             <div className="info-grid reveal">
               {[
-                { icon: "location_on", label: "Address", value: hospital.address },
-                { icon: "call", label: "Phone", value: hospital.phone },
-                { icon: "schedule", label: "Hours", value: hospital.hours },
-                { icon: "event_available", label: "OPD Timing", value: hospital.opd_timing },
+                { icon: "location_on", label: "Address", value: hospital.address || "Contact via hospital" },
+                { icon: "call", label: "Phone", value: hospital.phone || "Contact via hospital" },
+                { icon: "schedule", label: "Hours", value: hospital.hours || "Contact via hospital" },
+                { icon: "event_available", label: "OPD Timing", value: hospital.opd_timing || "Contact via hospital" },
               ].map((t) => (
                 <div className="info-tile" key={t.label}>
                   <div className="info-tile-icon"><span className="material-symbols-outlined">{t.icon}</span></div>
@@ -141,12 +162,17 @@ export default function HospitalDetailClient({ id }: { id: string }) {
 
             <div className="cta-bar reveal" id="book">
               <div className="cta-bar-text">
-                <h3>Book an OPD appointment</h3>
-                <p>Choose a department and slot. Sign in to book and get reminders.</p>
+                <h3>Chat on WhatsApp for OPD</h3>
+                <p>Message us on WhatsApp for OPD timings and availability.</p>
               </div>
-              <button className="btn btn-primary" type="button" onClick={() => setShowAuth(true)}>
-                <span className="material-symbols-outlined">calendar_month</span> Book OPD
-              </button>
+              <a
+                className="btn btn-primary"
+                href={waLink(`Hello, I want OPD details for ${hospital?.name ?? "your hospital"}`)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="material-symbols-outlined">chat</span> Chat on WhatsApp for OPD
+              </a>
             </div>
 
             <div className="detail-tabs reveal" role="tablist">
@@ -154,6 +180,53 @@ export default function HospitalDetailClient({ id }: { id: string }) {
                 <button key={t} className={`detail-tab${activeTab === t ? " active" : ""}`} onClick={() => setActiveTab(t)} role="tab" type="button">{t.charAt(0).toUpperCase() + t.slice(1)}</button>
               ))}
             </div>
+
+            {activeTab === "specialities" && (
+              <section className="tab-panel active" id="tab-specialities" role="tabpanel">
+                <div className="hcard-chips" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+                  {(hospital.specialties ?? []).length > 0 ? (
+                    (hospital.specialties ?? []).map((s) => (
+                      <span key={s} className="specialty-chip">{s}</span>
+                    ))
+                  ) : (
+                    <p style={{ color: "var(--text-secondary)" }}>Specialities not listed — contact the hospital directly.</p>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {activeTab === "doctors" && (
+              <section className="tab-panel active" id="tab-doctors" role="tabpanel">
+                {doctors.length === 0 ? (
+                  <p style={{ color: "var(--text-secondary)" }}>No verified doctors linked yet — contact the hospital directly.</p>
+                ) : (
+                  <div className="results-grid">
+                    {doctors.map((d) => (
+                      <article key={d.id} className="hcard">
+                        <div className="hcard-top">
+                          <div className="hcard-logo">
+                            <span className="material-symbols-outlined">person</span>
+                          </div>
+                          <div className="hcard-id">
+                            <div className="hcard-name">{d.name ?? "Doctor"}</div>
+                            <div className="doc-spec">{d.specialty ?? "General Medicine"}</div>
+                          </div>
+                        </div>
+                        <div className="hcard-meta-row">
+                          <span className="badge badge-success">
+                            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>verified</span>
+                            Verified listing
+                          </span>
+                        </div>
+                        <div className="hcard-foot">
+                          <span className="doc-next">Contact via hospital</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
 
             {activeTab === "reviews" && (
               <section className="tab-panel active" id="tab-reviews" role="tabpanel">

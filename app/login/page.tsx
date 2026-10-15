@@ -1,29 +1,36 @@
-"use client";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { AuthForm } from "@/components/auth/auth-form";
+import { AuthLayout } from "@/components/auth/auth-layout";
 
-import { AuthModal } from "@/components/shared/auth-modal";
-import { AppLayout } from "@/components/app-layout";
-import { useState } from "react";
+export const metadata: Metadata = {
+  title: "Sign in — Swasthya Setu",
+  description:
+    "Sign in to Swasthya Setu to chat on WhatsApp, chat with doctors, and use AI health tools.",
+};
+
+function SigninFallback() {
+  return (
+    <div
+      className="animate-pulse rounded-xl border border-border bg-card p-6 sm:p-8"
+      aria-hidden
+    >
+      <div className="h-10 rounded-lg bg-muted" />
+      <div className="mt-4 h-10 rounded-lg bg-muted" />
+      <div className="mt-4 h-10 rounded-lg bg-muted" />
+    </div>
+  );
+}
 
 export default function LoginPage() {
-  const [showAuth, setShowAuth] = useState(false);
-
   return (
-    <AppLayout>
-      <div className="container section" style={{ paddingTop: "var(--space-8)" }}>
-        <div className="max-w-md mx-auto text-center reveal" style={{ marginBottom: "var(--space-8)" }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 64, color: "var(--color-primary)" }}>
-            health_and_safety
-          </span>
-          <h1 style={{ marginTop: "var(--space-4)" }}>Welcome to Swasthya Setu</h1>
-          <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-3)" }}>
-            Sign in to book appointments, chat with doctors, and access AI health tools.
-          </p>
-          <button className="btn btn-primary btn-lg" onClick={() => setShowAuth(true)} style={{ marginTop: "var(--space-4)" }}>
-            Sign in to continue
-          </button>
-          <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
-        </div>
-      </div>
-    </AppLayout>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to continue to your health dashboard."
+    >
+      <Suspense fallback={<SigninFallback />}>
+        <AuthForm mode="signin" />
+      </Suspense>
+    </AuthLayout>
   );
 }

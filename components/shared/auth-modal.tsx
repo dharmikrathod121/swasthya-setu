@@ -47,7 +47,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         </div>
         <h2>{isSignUp ? "Create account" : "Sign in"}</h2>
         <p className="auth-sub">
-          {isSignUp ? "Sign up to book appointments and save your health data." : "Welcome back! Sign in to continue."}
+          {isSignUp ? "Sign up to chat on WhatsApp and save your health data." : "Welcome back! Sign in to continue."}
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>

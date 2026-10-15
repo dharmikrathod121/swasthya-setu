@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
+import { LandingAiSearch } from "@/components/landing-ai-search";
 import { PromptWall } from "@/components/prompt-wall";
 
 export default function LandingPage() {
@@ -30,46 +31,11 @@ export default function LandingPage() {
               <span className="hl">Rajkot</span>
             </h1>
             <p className="hero-sub">
-              Find hospitals, book verified doctors, and unlock AI health
+              Find hospitals, chat with doctors on WhatsApp, and unlock AI health
               tools — voice-first, multilingual, and built for everyone.
             </p>
 
-            <form
-              className="hero-search"
-              action="/search"
-              method="get"
-              role="search"
-            >
-              <label className="sr-only" htmlFor="hero-q">
-                Search hospitals, doctors, medicines
-              </label>
-              <div className="hs-field">
-                <span className="material-symbols-outlined">
-                  search
-                </span>
-                <input
-                  id="hero-q"
-                  type="text"
-                  name="q"
-                  placeholder="Search hospitals, doctors, medicines..."
-                />
-              </div>
-              <button type="submit" className="btn btn-primary">
-                Search
-              </button>
-            </form>
-
-            <div className="hero-chips">
-              <Link href="/hospitals" className="hero-chip">
-                🏥 Hospitals
-              </Link>
-              <Link href="/doctors" className="hero-chip">
-                👨‍⚕️ Doctors
-              </Link>
-              <Link href="/medicine-identifier" className="hero-chip">
-                💊 Medicines
-              </Link>
-            </div>
+            <LandingAiSearch />
 
             <div className="hero-cta">
               <Link href="/dashboard" className="btn btn-primary">
@@ -82,19 +48,22 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ============ TRUST BAR ============ */}
-        <div className="trust-bar reveal">
+        {/* ============ TRUST STRIP (no metrics) ============ */}
+        <div className="trust-bar reveal" aria-label="What Swasthya Setu offers">
           <div className="trust-pill">
-            <div className="tp-num">240+</div>
-            <div className="tp-label">Hospitals listed</div>
+            <div className="tp-label">
+              Government &amp; private hospitals in one place
+            </div>
           </div>
           <div className="trust-pill">
-            <div className="tp-num">1,800+</div>
-            <div className="tp-label">Verified doctors</div>
+            <div className="tp-label">
+              Verified doctors on WhatsApp &amp; free AI guidance
+            </div>
           </div>
           <div className="trust-pill">
-            <div className="tp-num">52,000+</div>
-            <div className="tp-label">AI reports analyzed</div>
+            <div className="tp-label">
+              AI health tools with plain-language explanations
+            </div>
           </div>
         </div>
 
@@ -131,8 +100,10 @@ export default function LandingPage() {
               </p>
             </Link>
 
-            <Link
-              href="/appointment"
+            <a
+              href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919999999999"}?text=${encodeURIComponent("Hello, I want to consult a doctor")}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="feature-card reveal"
             >
               <div
@@ -143,18 +114,18 @@ export default function LandingPage() {
                 }}
               >
                 <span className="material-symbols-outlined">
-                  event_available
+                  chat
                 </span>
               </div>
-              <h3>Book Doctors</h3>
+              <h3>WhatsApp Care Line</h3>
               <p>
-                Book appointments with verified specialists in a few
+                Chat on WhatsApp with verified specialists in a few
                 taps, by specialty and language.
               </p>
-            </Link>
+            </a>
 
             <Link
-              href="/ai-services"
+              href="/report-analyzer"
               className="feature-card reveal"
             >
               <div
@@ -219,7 +190,7 @@ export default function LandingPage() {
               </p>
             </Link>
 
-            <Link href="/chat" className="feature-card reveal">
+            <Link href="/health-tools" className="feature-card reveal">
               <div
                 className="feature-card-icon"
                 style={{
@@ -228,13 +199,13 @@ export default function LandingPage() {
                 }}
               >
                 <span className="material-symbols-outlined">
-                  forum
+                  monitor_weight
                 </span>
               </div>
-              <h3>Free Doctor Chat</h3>
+              <h3>Everyday Health Tools</h3>
               <p>
-                Chat with verified doctors for free guidance and
-                second opinions, no appointment needed.
+                BMI, calories, water and BP trackers — free and
+                private, no sign-in needed.
               </p>
             </Link>
           </div>
@@ -247,10 +218,10 @@ export default function LandingPage() {
       {/* ============ FOOTER ============ */}
       <PublicFooter />
 
-      {/* ============ STICKY VOICE TRIAGE ============ */}
-      <Link href="/emergency" className="voice-triage-pill">
-        <span className="vt-emoji">🎙</span> Voice Triage — tap to speak
-      </Link>
+      {/* ============ STICKY EMERGENCY CALL ============ */}
+      <a href="tel:108" className="voice-triage-pill" aria-label="Call 108 emergency">
+        <span className="vt-emoji">🚨</span> Emergency? Call 108 now
+      </a>
     </>
   );
 }

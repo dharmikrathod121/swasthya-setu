@@ -8,8 +8,6 @@ import { createMiddlewareClient } from "@/lib/supabase/middleware";
  */
 const PROTECTED_ROUTES = [
   "/dashboard",
-  "/appointments",
-  "/chat",
   "/ai-services",
 ];
 
@@ -40,8 +38,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Prevent authenticated users from re-visiting the login page.
-  if (isAuthenticated && pathname === "/login") {
+  // Prevent authenticated users from re-visiting auth pages.
+  if (isAuthenticated && (pathname === "/login" || pathname === "/signin" || pathname === "/signup")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -51,10 +49,10 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/appointments/:path*",
-    "/chat/:path*",
     "/ai-services/:path*",
     "/login",
+    "/signin",
+    "/signup",
     "/((?!_next|api|static|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|webp|css|js|woff2?|ttf|eot)$).*)",
   ],
 };

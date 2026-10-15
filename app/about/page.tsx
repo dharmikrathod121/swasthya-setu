@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { PublicHeader } from "@/components/public-header";
-import { PublicFooter } from "@/components/public-footer";
 
 export default function AboutPage() {
   return (
     <>
-      <PublicHeader />
       <main id="main">
         <div className="landing-section" style={{ paddingTop: "var(--space-8)" }}>
           <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -120,7 +117,7 @@ export default function AboutPage() {
                 <div className="timeline-dot"></div>
                 <div className="timeline-content">
                   <h4 className="font-bold mb-1">Phase 2: Discovery</h4>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Hospital and doctor search with filters, geolocation, and verified reviews. Appointment booking system.</p>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Hospital and doctor search with filters, geolocation, and verified reviews. Chat on WhatsApp to consult.</p>
                 </div>
               </div>
               <div className="timeline-item">
@@ -157,7 +154,6 @@ export default function AboutPage() {
           </div>
         </div>
       </main>
-      <PublicFooter />
     </>
   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Privacy Policy — Swasthya Setu",
   description:
-    "Privacy policy for Swasthya Setu, the national healthcare platform by the Ministry of Health & Family Welfare, Govt. of India.",
+    "Privacy policy for Swasthya Setu, an independent health information platform.",
 };
 
 export default function PrivacyPage() {
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         {[
           {
             title: "1. Information We Collect",
-            body: "We collect information you provide directly to us, such as when you create an account, book an appointment, or use our AI health tools. This may include your name, contact information, health data, and payment details where applicable.",
+            body: "We collect information you provide directly to us, such as when you create an account, chat on WhatsApp, or use our AI health tools. This may include your name, contact information, health data, and payment details where applicable.",
           },
           {
             title: "2. How We Use Your Information",
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
           },
           {
             title: "9. Contact Us",
-            body: "If you have questions about this Privacy Policy, please contact us at privacy@swasthyasetu.gov.in or write to: Data Protection Officer, Swasthya Setu, Ministry of Health & Family Welfare, Govt. of India, New Delhi.",
+            body: "If you have questions about this Privacy Policy, please contact us at support@swasthyasetu.in.",
           },
         ].map((section) => (
           <div key={section.title} className="card reveal">

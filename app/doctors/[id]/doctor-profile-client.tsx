@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { useAuth } from "@/components/shared/auth-provider";
 import { AuthModal } from "@/components/shared/auth-modal";
+import { doctorBookingLink } from "@/lib/whatsapp";
 
 const SLOTS = ["09:00 AM", "09:30 AM", "10:00 AM", "11:00 AM", "11:30 AM", "12:00 PM", "04:00 PM", "04:30 PM", "05:00 PM", "06:00 PM"];
 
@@ -32,17 +32,25 @@ function initialsOf(name: string) {
 
 export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }) {
   const d = doctor;
-  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [showAuth, setShowAuth] = useState(false);
   const { isLoggedIn } = useAuth();
+  void isLoggedIn;
   const timings = d.clinic_timings?.map((t) => `${t.day} · ${t.slots?.join(", ")}`).join(" | ") || "";
 
   const handleBook = () => {
-    if (!isLoggedIn) { setShowAuth(true); return; }
-    if (!selectedDate || !selectedSlot) { alert("Please select a date and time slot."); return; }
-    router.push(`/appointment?doctor=${d.id}&date=${selectedDate}&time=${selectedSlot}`);
+    const preferredTime = [selectedDate, selectedSlot]
+      .filter(Boolean)
+      .join(" ");
+    window.open(
+      doctorBookingLink(d.name, {
+        specialty: d.specialty,
+        hospital: d.hospital_id,
+        preferredTime,
+      }),
+      "_blank",
+    );
   };
 
   return (
@@ -101,7 +109,7 @@ export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }
                 <div className="booking" id="booking-widget">
                   <div className="booking-head">
                     <span className="bk-icon"><span className="material-symbols-outlined">event_available</span></span>
-                    <div><h3>Book appointment</h3><p>Pick a date &amp; time slot</p></div>
+                    <div><h3>Chat on WhatsApp</h3><p>Pick a date &amp; time slot, then confirm on WhatsApp</p></div>
                   </div>
                   <div className="booking-fee"><span className="bf-amount">₹{d.fee}</span><span className="bf-label">consultation</span></div>
 
@@ -119,8 +127,8 @@ export default function DoctorProfileClient({ doctor }: { doctor: DoctorDetail }
                     </div>
                   </div>
 
-                  <button className="btn btn-primary btn-lg" id="bk-confirm" type="button" style={{ width: "100%" }} onClick={handleBook} disabled={!selectedDate || !selectedSlot}>
-                    Confirm booking
+                  <button className="btn btn-primary btn-lg" id="bk-confirm" type="button" style={{ width: "100%" }} onClick={handleBook}>
+                    Chat on WhatsApp to consult
                   </button>
                   <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
                 </div>
