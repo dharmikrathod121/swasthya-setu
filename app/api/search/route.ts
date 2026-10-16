@@ -37,32 +37,64 @@ function levenshtein(a: string, b: string): number {
   return dp[n];
 }
 
-/** True if query matches target by substring, subsequence, or small edit distance. */
+/** True if query matches target by substring or a 1-char typo (never a
+ *  different word — e.g. "dermatologist" must NOT match "hematologist"). */
 function fuzzyMatch(query: string, target: string): boolean {
   const q = normalize(query);
   const t = normalize(target);
   if (!q || !t) return false;
   if (t.includes(q) || q.includes(t)) return true;
-  // Subsequence check (handles missing/extra chars)
-  let qi = 0;
-  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
-    if (t[ti] === q[qi]) qi++;
-  }
-  if (qi === q.length) return true;
-  // Word-level edit distance (handles substitutions like a->o)
+  // Single-character typo tolerance on whole words only (min 5 chars):
+  // "dermatologst" still finds "dermatologist", but "hematologist" (3 edits
+  // away) correctly does not match.
   const words = target.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
   const qWords = query.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
   for (const qw of qWords) {
     const nqw = normalize(qw);
-    if (nqw.length < 4) continue;
+    if (nqw.length < 5) continue;
     for (const w of words) {
       const nw = normalize(w);
-      if (Math.abs(nw.length - nqw.length) > 3) continue;
-      const threshold = Math.max(2, Math.floor(nqw.length / 4));
-      if (levenshtein(nqw, nw) <= threshold) return true;
+      if (nw.length < 5 || Math.abs(nw.length - nqw.length) > 1) continue;
+      if (levenshtein(nqw, nw) <= 1) return true;
     }
   }
   return false;
+}
+
+/**
+ * Maps "who" words to the specialty vocabulary used in the directory, so
+ * "dermatologist" finds Dermatology listings instead of nothing (or worse,
+ * a false fuzzy hit like Hematology).
+ */
+const SPECIALTY_DERIVATIONS: Record<string, string> = {
+  dermatologist: "dermatology",
+  cardiologist: "cardiology",
+  neurologist: "neurology",
+  pediatrician: "pediatrics",
+  gynecologist: "gynecology",
+  obstetrician: "obstetrics",
+  oncologist: "oncology",
+  hematologist: "hematology",
+  urologist: "urology",
+  nephrologist: "nephrology",
+  ophthalmologist: "ophthalmology",
+  psychiatrist: "psychiatry",
+  gastroenterologist: "gastroenterology",
+  pulmonologist: "pulmonology",
+  orthopedist: "orthopedics",
+  radiologist: "radiology",
+  dentist: "dental",
+};
+
+/** Extra specialty terms derived from the raw query (e.g. ologist → ology). */
+function derivedSpecialties(q: string): string[] {
+  const out = new Set<string>();
+  for (const raw of q.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)) {
+    if (SPECIALTY_DERIVATIONS[raw]) out.add(SPECIALTY_DERIVATIONS[raw]);
+    const m = raw.match(/^([a-z]{4,})ologist$/);
+    if (m) out.add(`${m[1]}ology`);
+  }
+  return [...out];
 }
 
 export async function GET(request: Request) {
@@ -73,18 +105,23 @@ export async function GET(request: Request) {
 
   try {
     const supabase = createServiceClient();
+    const derived = derivedSpecialties(q);
+    const titleCase = derived.map((d) => d.charAt(0).toUpperCase() + d.slice(1));
+
+    const hospOr = [`name.ilike.%${q}%`, `specialties.cs.{${q}}`, ...titleCase.map((t) => `specialties.cs.{${t}}`)].join(",");
+    const docOr = [`name.ilike.%${q}%,specialty.ilike.%${q}%`, ...derived.map((d) => `specialty.ilike.%${d}%`)].join(",");
 
     const [hospRes, docRes, medRes] = await withTimeout(
       Promise.all([
         supabase
           .from("hospitals")
           .select("*")
-          .or(`name.ilike.%${q}%,specialties.cs.{${q}}`)
+          .or(hospOr)
           .limit(5),
         supabase
           .from("doctors")
           .select("*")
-          .or(`name.ilike.%${q}%,specialty.ilike.%${q}%`)
+          .or(docOr)
           .limit(5),
         supabase
           .from("medicines")
@@ -109,18 +146,19 @@ export async function GET(request: Request) {
   }
 
   const needle = q.toLowerCase();
-  const hospitals = HOSPITALS.filter(
-    (h) =>
-      `${h.name} ${h.city} ${h.area} ${h.specialties.join(" ")}`
-        .toLowerCase()
-        .includes(needle) ||
-      fuzzyMatch(q, `${h.name} ${h.city} ${h.area}`)
-  ).slice(0, 5);
-  const doctors = DOCTORS.filter(
-    (d) =>
-      `${d.name} ${d.specialty} ${d.hospitalName}`.toLowerCase().includes(needle) ||
-      fuzzyMatch(q, `${d.name} ${d.specialty} ${d.hospitalName}`)
-  ).slice(0, 5);
+  const derived = derivedSpecialties(q);
+  const hospitals = HOSPITALS.filter((h) => {
+    const hay = `${h.name} ${h.city} ${h.area} ${h.specialties.join(" ")}`.toLowerCase();
+    if (hay.includes(needle)) return true;
+    if (derived.some((d) => hay.includes(d))) return true;
+    return fuzzyMatch(q, `${h.name} ${h.city} ${h.area}`);
+  }).slice(0, 5);
+  const doctors = DOCTORS.filter((d) => {
+    const hay = `${d.name} ${d.specialty} ${d.hospitalName}`.toLowerCase();
+    if (hay.includes(needle)) return true;
+    if (derived.some((x) => d.specialty.toLowerCase().includes(x))) return true;
+    return fuzzyMatch(q, `${d.name} ${d.specialty} ${d.hospitalName}`);
+  }).slice(0, 5);
 
   return NextResponse.json({
     hospitals,
