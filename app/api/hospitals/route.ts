@@ -8,19 +8,10 @@ function isClinicRow(row: { name?: unknown; location?: unknown }): boolean {
 }
 
 function inferCity(location: unknown, fallback = "Rajkot"): string {
+  // Rajkot-only directory: every facility is in Rajkot. Anything without an
+  // explicit city still resolves here.
   const loc = String(location ?? "");
-  const known = [
-    "Ahmedabad", "Rajkot", "Vadodara", "Surat", "Bhavnagar", "Gondal",
-    "New Delhi", "Delhi", "Mumbai", "Bengaluru", "Chennai", "Vellore",
-    "Madurai", "Gurugram", "Chandigarh", "Puducherry", "Khanderi", "Kuvadva",
-  ];
-  for (const c of known) {
-    if (loc.toLowerCase().includes(c.toLowerCase())) {
-      if (c === "Delhi") return "New Delhi";
-      if (c === "Khanderi" || c === "Kuvadva") return "Rajkot";
-      return c;
-    }
-  }
+  if (loc.toLowerCase().includes("rajkot")) return "Rajkot";
   return fallback;
 }
 

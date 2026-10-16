@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
 
 type SearchPreview = {
   hospitals?: { name?: string }[];
@@ -12,12 +11,12 @@ type SearchPreview = {
 };
 
 const SUGGESTIONS = [
-  "Find cardiologist in Ahmedabad",
-  "Best hospital for maternity",
-  "I have fever what to do?",
+  "Cardiologist in Rajkot",
+  "Maternity hospital",
+  "Civil Hospital Rajkot",
 ];
 
-export function LandingAiSearch() {
+export function LandingSearch() {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [preview, setPreview] = React.useState<SearchPreview | null>(null);
@@ -25,7 +24,7 @@ export function LandingAiSearch() {
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // ⌘K / Ctrl+K focuses the AI search input.
+  // ⌘K / Ctrl+K focuses the search input.
   React.useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -37,16 +36,22 @@ export function LandingAiSearch() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    if (value.trim().length < 2) {
+      setPreview(null);
+      setLoadingPreview(false);
+    }
+  }
+
   // Live preview against the existing GET /api/search?q=... endpoint.
   // Best-effort only: failures silently clear the dropdown, submit still routes.
+  // State updates happen inside the debounced callback (not the effect body).
   React.useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) {
-      setPreview(null);
-      return;
-    }
-    setLoadingPreview(true);
+    if (q.length < 2) return;
     const t = window.setTimeout(async () => {
+      setLoadingPreview(true);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
         if (!res.ok) throw new Error("search failed");
@@ -70,16 +75,6 @@ export function LandingAiSearch() {
     router.push(`/search?q=${encodeURIComponent(trimmed)}`);
   }
 
-  function goToAssistant(q: string) {
-    const trimmed = q.trim();
-    // /chatbot is the existing AI assistant; pass q so it can pre-fill.
-    router.push(
-      trimmed
-        ? `/chatbot?q=${encodeURIComponent(trimmed)}`
-        : "/chatbot"
-    );
-  }
-
   const previewItems: { label: string; kind: string }[] = React.useMemo(() => {
     if (!preview) return [];
     const items: { label: string; kind: string }[] = [];
@@ -97,78 +92,39 @@ export function LandingAiSearch() {
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      {/* AI badge */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          marginBottom: 10,
-        }}
-      >
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-            color: "#fff",
-            background: "rgba(255,255,255,0.16)",
-            border: "1px solid rgba(255,255,255,0.28)",
-            borderRadius: 999,
-            padding: "5px 12px",
-          }}
-        >
-          <Sparkles size={14} aria-hidden />
-          AI Search
-          <span
-            style={{
-              fontWeight: 500,
-              textTransform: "none",
-              letterSpacing: 0,
-              opacity: 0.85,
-            }}
-          >
-            · powered by Swasthya AI
-          </span>
-        </span>
-      </div>
-
       <form
         className="hero-search"
         role="search"
-        aria-label="AI health search"
+        aria-label="Search hospitals, doctors and medicines"
         style={{ position: "relative" }}
         onSubmit={(e) => {
           e.preventDefault();
           goToSearch(query);
         }}
       >
-        <label className="sr-only" htmlFor="landing-ai-q">
-          Ask anything about hospitals, doctors, or symptoms
+        <label className="sr-only" htmlFor="landing-search-q">
+          Search hospitals, doctors, or medicines
         </label>
         <div className="hs-field">
           <span
             className="material-symbols-outlined"
             aria-hidden
-            style={{ color: "var(--color-ai, #7c3aed)" }}
+            style={{ color: "var(--color-primary)" }}
           >
-            auto_awesome
+            search
           </span>
           <input
             ref={inputRef}
-            id="landing-ai-q"
+            id="landing-search-q"
             type="text"
             name="q"
             autoComplete="off"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => window.setTimeout(() => setFocused(false), 150)}
-            placeholder="Ask anything: best cardiologist near me, fever treatment, hospital for knee surgery…"
-            aria-label="Ask anything about health"
+            placeholder="Search hospitals, doctors, medicines in Rajkot…"
+            aria-label="Search hospitals, doctors, medicines"
           />
           <kbd
             title="Press ⌘K to focus"
@@ -187,8 +143,14 @@ export function LandingAiSearch() {
           </kbd>
         </div>
         <button type="submit" className="btn btn-primary">
-          <Sparkles size={16} aria-hidden style={{ marginRight: 4 }} />
-          Ask AI
+          <span
+            className="material-symbols-outlined"
+            aria-hidden
+            style={{ fontSize: 18, marginRight: 4 }}
+          >
+            search
+          </span>
+          Search
         </button>
 
         {/* Live preview dropdown from existing /api/search */}
@@ -218,7 +180,7 @@ export function LandingAiSearch() {
                   color: "var(--text-secondary)",
                 }}
               >
-                AI is searching hospitals, doctors, medicines…
+                Searching hospitals, doctors, medicines…
               </div>
             ) : (
               <>
@@ -267,35 +229,14 @@ export function LandingAiSearch() {
                     </span>
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => goToAssistant(query)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    width: "100%",
-                    padding: "10px 16px",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--color-ai, #7c3aed)",
-                    background: "var(--color-ai-soft, #f3e8ff)",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <Sparkles size={14} aria-hidden />
-                  Ask AI assistant about “{query.trim()}”
-                </button>
               </>
             )}
           </div>
         )}
       </form>
 
-      {/* Example prompts */}
-      <div className="hero-chips" role="list" aria-label="Try an example">
+      {/* Example searches */}
+      <div className="hero-chips" role="list" aria-label="Try an example search">
         {SUGGESTIONS.map((s) => (
           <button
             key={s}
@@ -309,7 +250,7 @@ export function LandingAiSearch() {
             style={{ cursor: "pointer" }}
             title={`Search: ${s}`}
           >
-            ✨ {s}
+            {s}
           </button>
         ))}
       </div>
@@ -321,24 +262,8 @@ export function LandingAiSearch() {
           textAlign: "center",
         }}
       >
-        Press <kbd style={{ opacity: 0.9 }}>Enter ↵</kbd> for results ·{" "}
-        <button
-          type="button"
-          onClick={() => goToAssistant(query)}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            color: "#fff",
-            fontSize: 12,
-            fontWeight: 600,
-            textDecoration: "underline",
-            cursor: "pointer",
-          }}
-        >
-          or open AI assistant
-        </button>{" "}
-        · For informational purposes only, not medical advice.
+        Press <kbd style={{ opacity: 0.9 }}>Enter ↵</kbd> for results · No sign-in
+        needed to search.
       </p>
     </div>
   );

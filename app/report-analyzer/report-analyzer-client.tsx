@@ -16,11 +16,13 @@ type TestRow = {
   value: string;
   range: string;
   interpretation: string;
+  simpleMeaning: string;
   status: string;
 };
 
 type Analysis = {
   summary: string;
+  simpleExplanation: string;
   tests: TestRow[];
   recommendations: string;
 };
@@ -102,9 +104,19 @@ function parseTests(value: unknown): TestRow[] {
       value: toText(r.value ?? r.result) || "—",
       range: toText(r.normalRange ?? r.range ?? r.referenceRange) || "—",
       interpretation: toText(r.interpretation ?? r.insight) || "",
+      simpleMeaning: toText(r.simpleMeaning ?? r.simpleExplanation ?? r.inSimpleWords ?? r.meaning),
       status: toText(r.status ?? r.flag) || "",
     };
   });
+}
+
+function plainStatus(row: TestRow): string {
+  const s = `${row.status} ${row.interpretation} ${row.simpleMeaning}`.toLowerCase();
+  if (/critical|danger|very high|very low|needs attention/.test(s)) return "Needs attention";
+  if (/high/.test(s)) return "High";
+  if (/low/.test(s)) return "Low";
+  if (/normal|in range|ok|fine|safe/.test(s)) return "Normal";
+  return row.status || "—";
 }
 
 function parseAnalysis(raw: string): Analysis {
@@ -112,18 +124,21 @@ function parseAnalysis(raw: string): Analysis {
   if (isRec(parsed)) {
     return {
       summary: toText(parsed.summary ?? parsed.assessment ?? parsed.overview),
+      simpleExplanation: toText(
+        parsed.simpleExplanation ?? parsed.simpleSummary ?? parsed.inSimpleWords ?? parsed.whatItMeans,
+      ),
       tests: parseTests(parsed.tests ?? parsed.results),
       recommendations: toText(
         parsed.recommendations ?? parsed.nextSteps ?? parsed.suggestions,
       ),
     };
   }
-  return { summary: raw.trim(), tests: [], recommendations: "" };
+  return { summary: raw.trim(), simpleExplanation: "", tests: [], recommendations: "" };
 }
 
 function isAbnormal(row: TestRow): boolean {
-  const s = `${row.status} ${row.interpretation}`.toLowerCase();
-  return /high|low|abnormal|critical|borderline|out of range/.test(s);
+  const s = `${row.status} ${row.interpretation} ${row.simpleMeaning}`.toLowerCase();
+  return /high|low|abnormal|critical|borderline|out of range|needs attention/.test(s);
 }
 
 export default function ReportAnalyzerClient() {
@@ -387,32 +402,61 @@ export default function ReportAnalyzerClient() {
                 )}
               </div>
 
-              {!resultError && analysis && analysis.tests.length > 0 && (
-                <div className="report-table" id="report-table" role="table" aria-label="Extracted report values">
-                  <div className="report-head" role="row">
-                    <span role="columnheader">Test</span>
-                    <span role="columnheader">Value</span>
-                    <span role="columnheader">Normal range</span>
-                    <span role="columnheader">Interpretation</span>
-                    <span role="columnheader">Status</span>
-                  </div>
-                  {analysis.tests.map((row, i) => (
-                    <div className={`report-row${isAbnormal(row) ? " is-abnormal" : ""}`} role="row" key={`${row.test}-${i}`}>
-                      <span className="rc-test" role="cell">{row.test}</span>
-                      <span className="rc-value" role="cell">{row.value}</span>
-                      <span className="rc-range" role="cell">{row.range}</span>
-                      <span className="rc-interp" role="cell">{row.interpretation || "—"}</span>
-                      <span role="cell">{row.status || "—"}</span>
-                    </div>
-                  ))}
+              {!resultError && analysis?.simpleExplanation && (
+                <div
+                  className="az-caution"
+                  style={{ background: "var(--color-success-soft)", borderColor: "color-mix(in srgb, var(--color-success) 25%, transparent)", marginTop: 0, marginBottom: "var(--space-5)" }}
+                >
+                  <span className="material-symbols-outlined" style={{ color: "var(--color-success)" }}>lightbulb</span>
+                  <span>
+                    <strong style={{ display: "block", marginBottom: "4px" }}>In simple words — what this report means for you</strong>
+                    {analysis.simpleExplanation}
+                  </span>
                 </div>
+              )}
+
+              {!resultError && analysis && analysis.tests.length > 0 && (
+                <>
+                  <h3 className="result-section-title" style={{ marginTop: "var(--space-6)" }}>Your test results — explained simply</h3>
+                  <div className="report-table" id="report-table" role="table" aria-label="Extracted report values">
+                    <div className="report-head" role="row">
+                      <span role="columnheader">Test</span>
+                      <span role="columnheader">Your value</span>
+                      <span role="columnheader">Normal range</span>
+                      <span role="columnheader">What it means</span>
+                      <span role="columnheader">Status</span>
+                    </div>
+                    {analysis.tests.map((row, i) => (
+                      <div className={`report-row${isAbnormal(row) ? " is-abnormal" : ""}`} role="row" key={`${row.test}-${i}`}>
+                        <span className="rc-test" role="cell">{row.test}</span>
+                        <span className="rc-value" role="cell">{row.value}</span>
+                        <span className="rc-range" role="cell">{row.range}</span>
+                        <span className="rc-interp" role="cell">
+                          {row.simpleMeaning
+                            ? row.simpleMeaning.replace(/^In simple words:\s*/i, "")
+                            : row.interpretation || "—"}
+                          {row.simpleMeaning && row.interpretation && (
+                            <span style={{ display: "block", fontSize: "var(--text-xs)", marginTop: "4px" }}>{row.interpretation}</span>
+                          )}
+                        </span>
+                        <span role="cell">{plainStatus(row)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
 
               {!resultError && analysis?.recommendations && (
                 <>
-                  <h3 className="result-section-title" style={{ marginTop: "var(--space-6)" }}>Recommended next steps</h3>
+                  <h3 className="result-section-title" style={{ marginTop: "var(--space-6)" }}>What to do next — in simple words</h3>
                   <div className="result-summary" style={{ display: "block" }}><Markdown text={analysis.recommendations} /></div>
                 </>
+              )}
+              {!resultError && analysis && (
+                <div className="az-caution">
+                  <span className="material-symbols-outlined">info</span>
+                  <span>Simple tip: “High” means above normal, “Low” means below normal. Only a doctor can say if it is serious — take this report to your doctor and ask what it means for you.</span>
+                </div>
               )}
 
               <div className="card-footer" style={{ margin: "var(--space-6) calc(-1 * var(--space-6)) calc(-1 * var(--space-6))", borderTop: "1px solid var(--border-subtle)", display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>

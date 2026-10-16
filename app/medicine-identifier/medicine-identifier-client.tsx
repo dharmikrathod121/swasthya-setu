@@ -15,6 +15,8 @@ type Match = {
   sub: string;
   detailLines: { label: string; value: string }[];
   confidence: number | null;
+  simpleExplanation: string;
+  safetyNote: string;
 };
 
 const isRec = (v: unknown): v is Json =>
@@ -78,12 +80,16 @@ function parseMatches(value: unknown): Match[] {
     if (category) detailLines.push({ label: "Category", value: category });
     if (uses) detailLines.push({ label: "Common uses", value: uses });
     const sideEffects = toText(r.side_effects ?? r.sideEffects);
-    if (sideEffects) detailLines.push({ label: "Side effects", value: sideEffects });
+    if (sideEffects) detailLines.push({ label: "Side effects (simple)", value: sideEffects });
     return {
       name: toText(r.name) || generic || "Unknown medicine",
       sub: generic && toText(r.name) !== generic ? generic : category,
       detailLines,
       confidence: toConfidence(r.confidence),
+      simpleExplanation: toText(
+        r.simpleExplanation ?? r.simpleMeaning ?? r.explanation ?? r.whatItDoes ?? r.plainSummary,
+      ),
+      safetyNote: toText(r.safetyNote ?? r.safety ?? r.warning),
     };
   });
 }
@@ -329,6 +335,18 @@ export default function MedicineIdentifierClient() {
                   <span role="alert">No matches found. Try a clearer, well-lit photo that shows the pill&apos;s imprint or color.</span>
                 )}
               </div>
+              {!resultError && matches && matches.length > 0 && matches[0]?.simpleExplanation && (
+                <div
+                  className="az-caution"
+                  style={{ background: "var(--color-success-soft)", borderColor: "color-mix(in srgb, var(--color-success) 25%, transparent)", marginTop: 0, marginBottom: "var(--space-5)" }}
+                >
+                  <span className="material-symbols-outlined" style={{ color: "var(--color-success)" }}>lightbulb</span>
+                  <span>
+                    <strong style={{ display: "block", marginBottom: "4px" }}>In simple words — what is this medicine?</strong>
+                    {matches[0].simpleExplanation}
+                  </span>
+                </div>
+              )}
               {!resultError && matches && matches.length > 0 && (
                 <div className="grid-2" id="match-list" style={{ marginTop: "var(--space-5)" }}>
                   {matches.map((m, i) => (
@@ -343,6 +361,11 @@ export default function MedicineIdentifierClient() {
                           {m.sub && <div className="match-brand">{m.sub}</div>}
                         </div>
                       </div>
+                      {m.simpleExplanation && i > 0 && (
+                        <p className="match-detail" style={{ fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>
+                          <b>In simple words:</b> {m.simpleExplanation}
+                        </p>
+                      )}
                       {m.confidence !== null && (
                         <div className="match-confidence">
                           <div className="conf-track">
@@ -363,8 +386,19 @@ export default function MedicineIdentifierClient() {
                           ))}
                         </div>
                       )}
+                      {m.safetyNote && (
+                        <p className="match-detail" style={{ color: "var(--color-warning)" }}>
+                          <b>Please note:</b> {m.safetyNote}
+                        </p>
+                      )}
                     </div>
                   ))}
+                </div>
+              )}
+              {!resultError && matches && matches.length > 0 && (
+                <div className="az-caution">
+                  <span className="material-symbols-outlined">info</span>
+                  <span>Simple tip: match the name on your strip with the name above. If the spelling is different, do NOT take it — ask your pharmacist what it means for you.</span>
                 </div>
               )}
 

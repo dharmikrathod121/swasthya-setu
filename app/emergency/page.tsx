@@ -12,7 +12,7 @@ export default function EmergencyPage() {
       <p className="badge badge-primary">Emergency</p>
       <h1>If this is an emergency, call now</h1>
       <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>
-        For life-threatening situations in India, call the national emergency
+        For life-threatening situations in Rajkot, call the emergency
         ambulance number <strong>108</strong> first. Then follow the steps below.
       </p>
 

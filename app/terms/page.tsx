@@ -57,7 +57,7 @@ export default function TermsPage() {
           },
           {
             title: "10. Governing Law",
-            body: "These Terms shall be governed by and construed in accordance with the laws of India. Any disputes arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts in New Delhi, India.",
+            body: "These Terms shall be governed by and construed in accordance with the laws of India. Any disputes arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts in Rajkot.",
           },
           {
             title: "11. Contact Information",

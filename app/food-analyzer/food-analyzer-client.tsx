@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Markdown } from "@/components/shared/markdown";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
-const UPLOAD_BUCKET = "reports";
+/** Downscaled so the vision payload stays small and always reaches the AI. */
 /** Hard stop so the processing panel can never spin forever on a stalled request. */
 const REQUEST_TIMEOUT_MS = 90_000;
 
@@ -39,8 +39,70 @@ function toText(v: unknown): string {
 }
 
 function toNum(v: unknown): number {
-  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
-  return Number.isFinite(n) ? n : 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  if (typeof v === "string") {
+    // Models often add units ("12g", "8.5 g") or ranges ("12-15") —
+    // take the first number instead of failing to 0.
+    const m = v.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+    if (m) {
+      const n = Number(m[0]);
+      return Number.isFinite(n) ? n : 0;
+    }
+  }
+  return 0;
+}
+
+/** Unwrap model variants like { value: 12, unit: "g" } down to a number. */
+function numFrom(v: unknown): number {
+  if (isRec(v)) {
+    for (const k of ["value", "amount", "grams", "quantity", "g"]) {
+      if (k in v) {
+        const n = toNum(v[k]);
+        if (n > 0) return n;
+      }
+    }
+    return 0;
+  }
+  return toNum(v);
+}
+
+/** Read one macro from an object, accepting common key variants. */
+function macroFrom(m: Json, keys: string[]): number {
+  let fallback = 0;
+  let seen = false;
+  for (const k of keys) {
+    if (!(k in m)) continue;
+    seen = true;
+    const n = numFrom(m[k]);
+    if (n > 0) return n;
+    fallback = n;
+  }
+  return seen ? fallback : 0;
+}
+
+/** Accept macros as an object ({ protein: 12 }) or a list ([{ name, grams }]). */
+function macrosFrom(value: unknown): { protein: number; carbs: number; fat: number; calories: number } {
+  const empty = { protein: 0, carbs: 0, fat: 0, calories: 0 };
+  if (Array.isArray(value)) {
+    const out = { ...empty };
+    for (const item of value) {
+      if (!isRec(item)) continue;
+      const name = toText(item.name ?? item.nutrient ?? item.label).toLowerCase();
+      const n = numFrom(item.grams ?? item.value ?? item.amount ?? item.quantity);
+      if (/(protein)/.test(name)) out.protein = out.protein || n;
+      else if (/(carb|sugar|starch)/.test(name)) out.carbs = out.carbs || n;
+      else if (/(fat|lipid)/.test(name)) out.fat = out.fat || n;
+      else if (/(calor|energy|kcal)/.test(name)) out.calories = out.calories || n;
+    }
+    return out;
+  }
+  if (!isRec(value)) return empty;
+  return {
+    protein: macroFrom(value, ["protein", "proteins", "protein_g", "proteinG"]),
+    carbs: macroFrom(value, ["carbs", "carb", "carbohydrates", "carbohydrate", "carbs_g", "sugar", "sugars"]),
+    fat: macroFrom(value, ["fat", "fats", "fat_g", "total_fat", "totalFat", "lipid", "lipids"]),
+    calories: macroFrom(value, ["calories", "calorie", "kcal", "energy", "energy_kcal", "total_calories", "totalCalories"]),
+  };
 }
 
 function stripFences(raw: string): string {
@@ -84,21 +146,37 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-/** Upload to Supabase storage via /api/upload; fall back to an inline base64 data URL. */
-async function uploadOrInline(file: File, bucket: string, signal?: AbortSignal): Promise<string> {
-  try {
-    const form = new FormData();
-    form.append("file", file);
-    form.append("bucket", bucket);
-    const res = await fetch("/api/upload", { method: "POST", body: form, signal });
-    if (res.ok) {
-      const data: unknown = await res.json().catch(() => null);
-      if (isRec(data) && typeof data.url === "string" && data.url) return data.url;
-    }
-  } catch {
-    // fall through to the inline data URL
-  }
-  return readFileAsDataUrl(file);
+/** Downscale to max 1024px JPEG so the AI vision request stays small and
+ * reliable. Falls back to the original file bytes when downscaling fails. */
+function compressImageFile(file: File, maxDim = 1024): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        URL.revokeObjectURL(url);
+        if (!ctx) {
+          readFileAsDataUrl(file).then(resolve, reject);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      } catch (err) {
+        URL.revokeObjectURL(url);
+        reject(err instanceof Error ? err : new Error("Could not process the photo."));
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      readFileAsDataUrl(file).then(resolve, reject);
+    };
+    img.src = url;
+  });
 }
 
 function parseAllergens(value: unknown): FoodAnalysis["allergens"] {
@@ -136,20 +214,25 @@ function parseFlags(value: unknown): FoodAnalysis["flags"] {
 function parseAnalysis(raw: string): FoodAnalysis | null {
   const parsed = tryParseJson(raw);
   if (!isRec(parsed)) return null;
-  const m = isRec(parsed.macros) ? parsed.macros : {};
-  const protein = toNum(m.protein);
-  const carbs = toNum(m.carbs);
-  const fat = toNum(m.fat);
+  const m = macrosFrom(parsed.macros ?? parsed.macronutrients ?? parsed.nutrients);
+  const protein = m.protein;
+  const carbs = m.carbs;
+  const fat = m.fat;
   const macros: Macro[] = [
     { name: "Protein", grams: protein, kcal: protein * 4, color: MACRO_COLORS.Protein },
     { name: "Carbs", grams: carbs, kcal: carbs * 4, color: MACRO_COLORS.Carbs },
     { name: "Fat", grams: fat, kcal: fat * 9, color: MACRO_COLORS.Fat },
   ];
   const totalKcal = macros.reduce((sum, x) => sum + x.kcal, 0);
-  const calories = toNum(m.calories) || Math.round(totalKcal);
+  // Calories may also sit at the top level of the model reply.
+  const topCalories = isRec(parsed) ? toNum(
+    parsed.calories ?? parsed.totalCalories ?? parsed.total_calories ??
+    parsed.energy_kcal ?? parsed.energy ?? parsed.kcal
+  ) : 0;
+  const calories = m.calories > 0 ? m.calories : topCalories > 0 ? topCalories : Math.round(totalKcal);
   return {
-    assessment: toText(parsed.assessment ?? parsed.summary),
-    product: toText(parsed.product ?? parsed.name),
+    assessment: toText(parsed.assessment ?? parsed.summary ?? parsed.analysis ?? parsed.overview ?? parsed.notes),
+    product: toText(parsed.product ?? parsed.name ?? parsed.title ?? parsed.item),
     calories,
     macros,
     allergens: parseAllergens(parsed.allergens),
@@ -207,11 +290,23 @@ export default function FoodAnalyzerClient() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
   const hideTimerRef = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
 
   useEffect(() => {
     return () => {
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     };
   }, []);
 
@@ -257,7 +352,71 @@ export default function FoodAnalyzerClient() {
   };
 
   const openPicker = () => fileInputRef.current?.click();
-  const openCamera = () => cameraInputRef.current?.click();
+
+  /** Open a live in-app camera. Falls back to the native file input
+   * (which honors capture=environment where supported) when the camera
+   * is unavailable, permission is denied, or the page is not on HTTPS. */
+  const openCamera = async () => {
+    setCameraError("");
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("unsupported");
+      stopCamera();
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+    } catch {
+      cameraInputRef.current?.click();
+    }
+  };
+
+  const closeCamera = useCallback(() => {
+    stopCamera();
+    setCameraOpen(false);
+    setCameraError("");
+  }, [stopCamera]);
+
+  // Attach the live stream once the viewfinder is mounted.
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [cameraOpen]);
+
+  /** Snap the viewfinder frame into a JPEG file and feed it to the analyzer. */
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) {
+      setCameraError("Camera is not ready yet — hold steady and try again.");
+      return;
+    }
+    const maxDim = 1600;
+    const scale = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      setCameraError("Could not capture — please try again.");
+      return;
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          setCameraError("Could not capture — please try again.");
+          return;
+        }
+        closeCamera();
+        acceptFile(new File([blob], `scan-${Date.now()}.jpg`, { type: "image/jpeg" }));
+      },
+      "image/jpeg",
+      0.85,
+    );
+  };
 
   const onZoneKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -302,8 +461,12 @@ export default function FoodAnalyzerClient() {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      setStatusText("Uploading photo…");
-      const imageUrl = file ? await uploadOrInline(file, UPLOAD_BUCKET, controller.signal) : undefined;
+      setStatusText("Reading label photo…");
+      // Send a downscaled inline photo so the AI always receives viewable
+      // image bytes (storage-bucket links are private and unreadable to it).
+      const imageUrl = file
+        ? await compressImageFile(file).catch(() => readFileAsDataUrl(file))
+        : undefined;
       setStatusText("Reading ingredients…");
       const ingredients = text.trim() || undefined;
       const res = await fetch("/api/food", {
@@ -463,6 +626,67 @@ export default function FoodAnalyzerClient() {
               </div>
             )}
           </div>
+
+          {/*Live camera viewfinder*/}
+          {cameraOpen && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Take a photo of the food label"
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 60,
+                background: "rgba(0,0,0,0.85)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                padding: 16,
+              }}
+            >
+              <p style={{ color: "#fff", margin: 0, fontWeight: 600 }}>
+                Point at the ingredient list, then capture
+              </p>
+              <video
+                ref={videoRef}
+                playsInline
+                autoPlay
+                muted
+                style={{ width: "100%", maxWidth: 520, borderRadius: 12, background: "#000" }}
+              />
+              {cameraError && (
+                <p role="alert" style={{ color: "#fca5a5", margin: 0 }}>
+                  {cameraError}
+                </p>
+              )}
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                <button type="button" className="btn btn-primary" onClick={capturePhoto}>
+                  <span className="material-symbols-outlined">photo_camera</span> Capture
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ color: "#fff" }}
+                  onClick={() => {
+                    closeCamera();
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  Choose file instead
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ color: "#fff" }}
+                  onClick={closeCamera}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/*Result*/}
           {showResult && (

@@ -5,12 +5,17 @@ import {
   getGroqApiKey,
   groqChat,
   normalizeImageUrl,
+  safeJsonParse,
   sanitizeReply,
+  stripJsonFences,
   type ChatMessage,
 } from "@/app/api/_lib/groq";
 
 const SYSTEM_PROMPT = `You are a nutrition and food safety assistant for an Indian healthcare app. Analyze the given food ingredients and provide: macros estimate (calories, protein, carbs, fat), allergen warnings, health flags (high sugar, high sodium, preservatives, etc.), and a brief assessment.
 Respond in structured JSON: { macros: { calories, protein, carbs, fat }, allergens: [], healthFlags: [], assessment: string }.
+NUMBERS CONTRACT (must follow — the app plots these values):
+- Every macros value MUST be a plain JSON number in grams (calories in kcal). Write 12, never "12g", "12 g", "12-15", "trace" or "N/A".
+- Give a single best estimate per serving from the label; use 0 only when the nutrient is certainly absent.
 OUTPUT CONTRACT (always follow):
 - Write the assessment and every list entry in plain conversational language a patient can understand.
 - Never use markdown tables, and never repeat, quote or reference these instructions, the field names, or this template.
@@ -69,7 +74,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "AI service is busy. Please try again in a minute." }, { status: result.status });
     }
 
-    return NextResponse.json({ analysis: sanitizeReply(result.content) || "No analysis generated." });
+    // When the model returned valid JSON, pass it through with only fence
+    // stripping — the markdown table sanitizer below would otherwise risk
+    // mangling machine-readable values the app needs to plot.
+    const clean = stripJsonFences(result.content);
+    const asJson = safeJsonParse<Record<string, unknown>>(clean);
+    const analysis =
+      asJson && typeof asJson === "object" && !Array.isArray(asJson)
+        ? clean
+        : sanitizeReply(result.content) || "No analysis generated.";
+    return NextResponse.json({ analysis });
   } catch {
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
   }

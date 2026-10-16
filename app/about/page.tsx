@@ -15,7 +15,7 @@ export default function AboutPage() {
             <div className="section-eyebrow justify-center" style={{ display: "inline-flex" }}>About Us</div>
             <h1 className="mb-4">Swasthya Setu</h1>
             <p className="text-lg mx-auto" style={{ color: "var(--text-secondary)", maxWidth: 700 }}>
-              A next-generation national healthcare infrastructure, prioritizing institutional trust, universal accessibility, and modern efficiency for every citizen of India.
+              A modern healthcare companion built for Rajkot — helping every resident find trusted hospitals, clinics and health guidance close to home.
             </p>
           </section>
 

@@ -73,7 +73,7 @@ function SearchInner() {
           type="text"
           className="search-bar-input"
           style={{ flex: 1, paddingLeft: 40 }}
-          placeholder="AI search — try 'cardiologist in Ahmedabad' or 'fever what to do?'"
+          placeholder="Search hospitals, doctors, medicines…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           aria-label="Search"

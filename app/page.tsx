@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
-import { LandingAiSearch } from "@/components/landing-ai-search";
+import { LandingSearch } from "@/components/landing-search";
 import { PromptWall } from "@/components/prompt-wall";
 
 export default function LandingPage() {
@@ -35,7 +35,7 @@ export default function LandingPage() {
               tools — voice-first, multilingual, and built for everyone.
             </p>
 
-            <LandingAiSearch />
+            <LandingSearch />
 
             <div className="hero-cta">
               <Link href="/dashboard" className="btn btn-primary">

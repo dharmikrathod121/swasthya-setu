@@ -7,7 +7,6 @@ import {
   HOSPITALS,
   DOCTORS,
   SPECIALTIES,
-  CITIES,
   type Facility,
   type DoctorEntry,
 } from "@/lib/hospitals-data";
@@ -19,7 +18,6 @@ interface Filters {
   q: string;
   type: string;
   specialty: string;
-  city: string;
   emergency: boolean;
 }
 
@@ -28,7 +26,6 @@ const DEFAULT_FILTERS: Filters = {
   q: "",
   type: "all",
   specialty: "all",
-  city: "all",
   emergency: false,
 };
 
@@ -41,7 +38,6 @@ function readInitialFilters(): Filters {
     q: sp.get("q") ?? "",
     type: sp.get("type") ?? "all",
     specialty: sp.get("specialty") ?? "all",
-    city: sp.get("city") ?? "all",
     emergency: sp.get("emergency") === "true",
   };
 }
@@ -120,7 +116,6 @@ export default function HospitalsClient() {
     if (filters.q) sp.set("q", filters.q);
     if (filters.type !== "all") sp.set("type", filters.type);
     if (filters.specialty !== "all") sp.set("specialty", filters.specialty);
-    if (filters.city !== "all") sp.set("city", filters.city);
     if (filters.emergency) sp.set("emergency", "true");
     const qs = sp.toString();
     window.history.replaceState(null, "", `/hospitals${qs ? `?${qs}` : ""}`);
@@ -140,16 +135,6 @@ export default function HospitalsClient() {
     return DOCTORS;
   }, [apiDoctors]);
 
-  const hospitalCity = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const f of facilities) map.set(f.id, f.city);
-    for (const f of HOSPITALS) {
-      if (!map.has(f.id)) map.set(f.id, f.city);
-      map.set(f.name, f.city);
-    }
-    return map;
-  }, [facilities]);
-
   const matchesCommon = (name: string, extra: string) => {
     if (!filters.q) return true;
     return `${name} ${extra}`.toLowerCase().includes(filters.q.toLowerCase());
@@ -164,7 +149,6 @@ export default function HospitalsClient() {
         const s = filters.specialty.toLowerCase();
         if (!h.specialties.some((x) => x.toLowerCase().includes(s))) return false;
       }
-      if (filters.city !== "all" && !h.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
       if (filters.emergency && !h.emergency) return false;
       if (!matchesCommon(h.name, `${h.city} ${h.area} ${h.specialties.join(" ")}`)) return false;
       if (aiIds !== null && !aiIds.includes(h.id)) return false;
@@ -179,15 +163,11 @@ export default function HospitalsClient() {
       if (filters.specialty !== "all") {
         if (!d.specialty.toLowerCase().includes(filters.specialty.toLowerCase())) return false;
       }
-      if (filters.city !== "all") {
-        const city = hospitalCity.get(d.hospitalId ?? "") ?? hospitalCity.get(d.hospitalName) ?? "";
-        if (!city.toLowerCase().includes(filters.city.toLowerCase())) return false;
-      }
       if (!matchesCommon(d.name, `${d.specialty} ${d.hospitalName}`)) return false;
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doctors, filters, hospitalCity]);
+  }, [doctors, filters]);
 
   const runAiSearch = async () => {
     const query = aiQuery.trim();
@@ -237,9 +217,9 @@ export default function HospitalsClient() {
         <section className="hero-gradient" style={{ padding: "clamp(40px, 6vw, 72px) var(--space-5)" }}>
           <div className="hero-inner" style={{ maxWidth: 760 }}>
             <span className="eyebrow">Hospitals Directory</span>
-            <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)" }}>
-              Find care across <span style={{ color: "var(--color-primary)" }}>Gujarat &amp; India</span>
-            </h1>
+              <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)" }}>
+                Find care across <span style={{ color: "var(--color-primary)" }}>Rajkot</span>
+              </h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-lg)", marginTop: "var(--space-3)", marginBottom: "var(--space-6)" }}>
               Verified government hospitals, private hospitals and clinics — no fake ratings, no invented distances.
             </p>
@@ -248,7 +228,7 @@ export default function HospitalsClient() {
               <input
                 type="text"
                 className="search-bar-input"
-                placeholder="Search by name, area, city or specialty…"
+                placeholder="Search by name, area or specialty…"
                 aria-label="Search hospitals, doctors and clinics"
                 value={filters.q}
                 onChange={(e) => setFilters({ ...filters, q: e.target.value })}
@@ -260,7 +240,7 @@ export default function HospitalsClient() {
                 <input
                   type="text"
                   className="search-bar-input"
-                  placeholder='AI search — e.g. "govt cardiac hospital in Ahmedabad"'
+                  placeholder='AI search — e.g. "govt cardiac hospital in Rajkot"'
                   aria-label="AI search hospitals"
                   value={aiQuery}
                   onChange={(e) => setAiQuery(e.target.value)}
@@ -348,21 +328,6 @@ export default function HospitalsClient() {
                 </div>
               </div>
 
-              <div className="filter-group">
-                <div className="filter-group-title">City</div>
-                <select
-                  className="doc-filter-select"
-                  aria-label="Filter by city"
-                  value={filters.city}
-                  onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-                >
-                  <option value="all">All cities</option>
-                  {CITIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-
               {filters.tab !== "doctors" && (
                 <div className="filter-group">
                   <div className="filter-group-title">Availability</div>
@@ -386,7 +351,7 @@ export default function HospitalsClient() {
               {isLoading && <div className="results-empty"><p>Loading directory…</p></div>}
               {!isLoading && results.length === 0 && (
                 <div className="results-empty">
-                  <p>No matches. Try widening the city, clearing the specialty, or using AI search.</p>
+                   <p>No matches. Try clearing the specialty, changing the search, or using AI search.</p>
                 </div>
               )}
               {filters.tab === "doctors" ? (

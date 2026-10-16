@@ -16,16 +16,19 @@ type Drug = {
   dosage: string;
   purpose: string;
   explain: string;
+  simpleMeaning: string;
 };
 
 type Interaction = {
   severity: "severe" | "moderate" | "safe";
   title: string;
   detail: string;
+  simpleMeaning: string;
 };
 
 type RxAnalysis = {
   summary: string;
+  simpleExplanation: string;
   medicines: Drug[];
   interactions: Interaction[];
 };
@@ -109,6 +112,7 @@ function parseDrugs(value: unknown): Drug[] {
       dosage: toText(r.dosage ?? r.dose ?? r.strength),
       purpose: toText(r.purpose ?? r.category ?? r.usedFor),
       explain: [timing, explanation].filter(Boolean).join(" — "),
+      simpleMeaning: toText(r.simpleMeaning ?? r.simpleExplanation ?? r.inSimpleWords ?? r.meaning),
     };
   });
 }
@@ -128,6 +132,7 @@ function parseInteractions(value: unknown): Interaction[] {
       severity,
       title: toText(r.title ?? r.drugs ?? r.pair ?? r.name) || "Interaction note",
       detail: toText(r.detail ?? r.description ?? r.note ?? r.text),
+      simpleMeaning: toText(r.simpleMeaning ?? r.simpleExplanation ?? r.inSimpleWords ?? r.meaning),
     };
   });
 }
@@ -137,15 +142,18 @@ function parseAnalysis(raw: string): RxAnalysis {
   if (isRec(parsed)) {
     return {
       summary: toText(parsed.summary ?? parsed.assessment ?? parsed.notes),
+      simpleExplanation: toText(
+        parsed.simpleExplanation ?? parsed.simpleSummary ?? parsed.inSimpleWords ?? parsed.whatItMeans,
+      ),
       medicines: parseDrugs(parsed.medicines ?? parsed.drugs ?? parsed.prescription),
       interactions: parseInteractions(parsed.interactions ?? parsed.warnings),
     };
   }
-  return { summary: raw.trim(), medicines: [], interactions: [] };
+  return { summary: raw.trim(), simpleExplanation: "", medicines: [], interactions: [] };
 }
 
 const RX_PROMPT =
-  "This is a doctor's prescription. Extract EVERY medicine listed with its name, dosage/strength, timing/frequency, and what it is for. Also list any interaction warnings between the medicines. Respond as JSON: { summary: string, medicines: [{ name, dosage, timing, purpose, explanation }], interactions: [{ severity: 'severe'|'moderate'|'safe', title, detail }] }.";
+  "This is a doctor's prescription. Extract EVERY medicine listed with its name, dosage/strength, timing/frequency, and what it is for in SIMPLE everyday words a 12-year-old can understand. Also add for the whole prescription: simpleExplanation (2-3 sentences: what the treatment is for overall and what matters most), and for each medicine: simpleMeaning (one line starting 'In simple words:' explaining what it does in the body + how/when to take it), and for each interaction: simpleMeaning (one line in simple words). Respond as JSON: { summary: string, simpleExplanation: string, medicines: [{ name, dosage, timing, purpose, explanation, simpleMeaning }], interactions: [{ severity: 'severe'|'moderate'|'safe', title, detail, simpleMeaning }] }.";
 
 export default function PrescriptionAnalyzerClient() {
   const [file, setFile] = useState<File | null>(null);
@@ -387,9 +395,22 @@ export default function PrescriptionAnalyzerClient() {
                 )}
               </div>
 
+              {!resultError && analysis?.simpleExplanation && (
+                <div
+                  className="az-caution"
+                  style={{ background: "var(--color-success-soft)", borderColor: "color-mix(in srgb, var(--color-success) 25%, transparent)", marginTop: 0, marginBottom: "var(--space-5)" }}
+                >
+                  <span className="material-symbols-outlined" style={{ color: "var(--color-success)" }}>lightbulb</span>
+                  <span>
+                    <strong style={{ display: "block", marginBottom: "4px" }}>In simple words — what this prescription means for you</strong>
+                    {analysis.simpleExplanation}
+                  </span>
+                </div>
+              )}
+
               {!resultError && analysis && analysis.medicines.length > 0 && (
                 <>
-                  <h3 className="result-section-title" style={{ marginTop: "var(--space-6)" }}>Medicines explained</h3>
+                  <h3 className="result-section-title" style={{ marginTop: "var(--space-6)" }}>Medicines explained in simple words</h3>
                   <div id="drug-list">
                     {analysis.medicines.map((drug, i) => (
                       <div className="drug-card" key={`${drug.name}-${i}`}>
@@ -403,6 +424,11 @@ export default function PrescriptionAnalyzerClient() {
                             {drug.dosage && <span className="drug-dosage">{drug.dosage}</span>}
                           </div>
                           {drug.explain && <p className="drug-explain">{drug.explain}</p>}
+                          {drug.simpleMeaning && (
+                            <p className="drug-explain" style={{ marginTop: "6px", color: "var(--text-primary)", background: "var(--color-surface-elevated)", borderRadius: "8px", padding: "8px 10px" }}>
+                              <strong>In simple words: </strong>{drug.simpleMeaning.replace(/^In simple words:\s*/i, "")}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -412,7 +438,7 @@ export default function PrescriptionAnalyzerClient() {
 
               {!resultError && analysis && analysis.interactions.length > 0 && (
                 <>
-                  <h3 className="result-section-title" style={{ marginTop: "var(--space-8)" }}>Interaction warnings</h3>
+                  <h3 className="result-section-title" style={{ marginTop: "var(--space-8)" }}>Interaction warnings — what to be careful about</h3>
                   <div id="interaction-list">
                     {analysis.interactions.map((item, i) => (
                       <div className={`interaction-card interaction-${item.severity}`} key={`${item.title}-${i}`}>
@@ -424,11 +450,20 @@ export default function PrescriptionAnalyzerClient() {
                         <div>
                           <strong>{item.title}</strong>
                           {item.detail && <p>{item.detail}</p>}
+                          {item.simpleMeaning && (
+                            <p style={{ marginTop: "4px" }}><strong>In simple words: </strong>{item.simpleMeaning.replace(/^In simple words:\s*/i, "")}</p>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 </>
+              )}
+              {!resultError && analysis && (
+                <div className="az-caution">
+                  <span className="material-symbols-outlined">info</span>
+                  <span>Simple tip: take medicines exactly as written (right time, right amount). If anything here is unclear, ask your doctor or pharmacist to explain it in your own words.</span>
+                </div>
               )}
 
               <div className="card-footer" style={{ margin: "var(--space-6) calc(-1 * var(--space-6)) calc(-1 * var(--space-6))", borderTop: "1px solid var(--border-subtle)", display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
